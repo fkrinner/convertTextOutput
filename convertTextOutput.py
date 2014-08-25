@@ -49,6 +49,7 @@ deisobared_f0_waves={	'0-+':[	'1-(0-+)0+ (pipi)_S pi S                          
 #------------------------------------------------------------------------------------------------------------------------------------
 def getLike(inFile):
 	"""Returns the log-likelihood of 'inFile'"""
+	count_calls('getLike')
 	nextIsLike=False
 	nextIsNevents=False
 	data=open(inFile,'r')
@@ -73,6 +74,7 @@ def getLike(inFile):
 #------------------------------------------------------------------------------------------------------------------------------------
 def getFitStatus(inFile): 
 	"""Retuns [mMin,mMax,nevents,likelihood,t'Min,t'Max]"""
+	count_calls('getFitStatus')
 	nextIsLike=False
 	nextIsNevents=False
 	nextIsMass=False
@@ -113,6 +115,7 @@ def getFitStatus(inFile):
 #------------------------------------------------------------------------------------------------------------------------------------
 def getEvents(inFile): 
 	"""Returns the number of events of 'inFile'"""
+	count_calls('getEvents')
 	nextIsN=False
 	data=open(inFile,'r')
 	for line in data.readlines():
@@ -125,6 +128,7 @@ def getEvents(inFile):
 #------------------------------------------------------------------------------------------------------------------------------------
 def getBestLike(direct='.'): 
 	"""Returns the file with the bes log-likelihood in the directory 'direct'"""
+	count_calls('getBestLike')
 	maxLike=-1.E10
 	bestFile=''
 	for fn in os.listdir(direct):
@@ -139,6 +143,7 @@ def getBestLike(direct='.'):
 #------------------------------------------------------------------------------------------------------------------------------------
 def getTotalFitStatus(direct='./'):
 	"""Return the total fit status of 'direct'"""
+	count_calls('getTotalFitStatus')
 	data=[]
 	for fn in os.listdir(direct):
 		if 'text_fit_' in fn:
@@ -150,6 +155,7 @@ def getTotalFitStatus(direct='./'):
 #------------------------------------------------------------------------------------------------------------------------------------
 def getBestFits(inDirect='./'): 
 	"""Returns a list of files with the best log-likelihoods"""
+	count_calls('getBestFits')
 	direct=inDirect
 	while True: # Remove // from path so it can be found in the 'bestFits.txt' even if //, /// or ... is given in the path
 		directOld=direct
@@ -191,6 +197,7 @@ def getBestFits(inDirect='./'):
 #------------------------------------------------------------------------------------------------------------------------------------
 def deleteDirectory(inDirect='./'):
 	"""Deletes a directory from the 'bestFits.txt' file (e.g., if more attempts are made)"""
+	count_calls('deleteDirectory')
 	direct=inDirect
 	while True:
 		directOld=direct
@@ -218,11 +225,13 @@ def deleteDirectory(inDirect='./'):
 #------------------------------------------------------------------------------------------------------------------------------------
 def updateDirectory(direct='./'):
 	"""Updates a directory in the 'bestFits.txt' file"""
+	count_calls('updateDirectory')
 	deleteDirectory(direct)
 	getBestFits(direct)
 #------------------------------------------------------------------------------------------------------------------------------------
 def readTextFile(inFile): 
 	"""Reads the text-output 'inFile' and returns [{wave: ...},[[COMA]]]"""
+	count_calls('readTextFile')
 	waves={}
 	print "  OPEN: "+inFile
 	data=open(inFile,'r')
@@ -285,6 +294,7 @@ def readTextFile(inFile):
 def getIntegrals(
 			inFile	): 
 	"""Returns diagonal integrals in 'inFile' (real) as {wave: integral}"""
+	count_calls('getIntegrals')
 	enterTheMatrix=False
 	data=open(inFile,'r')
 	integrals=[]
@@ -310,6 +320,7 @@ def getIntegrals(
 def getIntegralMatrix(
 			inFile	): 
 	"""Returns the integrals in 'inFile' as complex numbers in the form [{wave: ID},[[INTEGRALS]]], where ID gives the position in the matrix"""
+	count_calls('getIntegralMatrix')
 	enterTheMatrix=False
 	data=open(inFile,'r')
 	integrals=[]
@@ -342,6 +353,7 @@ def getIntegralAverage(
 			acceptanceCorrected=False,
 			normalizeToDiag=False		): # == COMPENSATE_AMP 0
 	"""Returns the diagonal integrals (real) averaged from 'm3PiMin' to 'm3PiMax'. Formatted as in 'getIntegrals(...)'"""
+	count_calls('getIntegralAverage')
 	fileString='PWANormIntegralsNAcc'
 	if acceptanceCorrected:
 		fileString='PWANormIntegralsAcc'
@@ -374,6 +386,7 @@ def getIntegralAverage(
 #------------------------------------------------------------------------------------------------------------------------------------
 def getIntegralMatrixAverage(m3PiMin,m3PiMax,intDir=integralsDefault,normalizeToDiag=False,acceptanceCorrected=True): 
 	"""Returns the integral-matrix averaged from 'm3PiMin' to 'm3PiMax'. Formatted as in 'getIntegralMatrix(...)'"""
+	count_calls('getIntegralMatrixAverage')
 	filesInRange=[]
 	fileString='PWANormIntegralsNAcc'
 	if acceptanceCorrected:
@@ -418,6 +431,7 @@ def getIntegralMatrixAverage(m3PiMin,m3PiMax,intDir=integralsDefault,normalizeTo
 #------------------------------------------------------------------------------------------------------------------------------------
 def getWholeFit( direct ):
 	"""Returns the whole data of a fit"""
+	count_calls('getWholeFit')
 	fileList=getBestFits(direct)
 	fitData=[]
 	print fileList
@@ -430,6 +444,7 @@ def getWholeFit( direct ):
 #####################################################################################################################################
 def binIntensities(binData):
 	"""Returns sorted list of intensities with the respective wave names"""
+	count_calls('binIntensities')
 	nevents = binData[0]['nevents']
 	ints = []
 	for key in binData[0].iterkeys():
@@ -447,6 +462,7 @@ def binIntensities(binData):
 #------------------------------------------------------------------------------------------------------------------------------------
 def getRelevantData(waves,direct):
 	"""Gives the T and covariance matrix for all 'waves[i]' in 'direct'"""
+	count_calls('getRelevantData')
 	points =[]
 	wavesStrip=[]
 	for wave in waves:
@@ -490,6 +506,7 @@ def getComaAmp(	waves,				# List of waves
 		direct,				# Directory
 		CONJUGATE=True		):	# Conjugate Amplitudes (Required for some fits, issue in PWA)
 	"""Prepares the data to be used by chi2amp.LoadFit(...) in 'chi2ampextended.py'"""
+	count_calls('getComaAmp')
 	COMPARE=False
 	SHOW = False # Shows jacobian and its numerical computed counterpart
 	raw_data = getRelevantData(waves,direct)
@@ -640,6 +657,7 @@ def getComaData(	waves,		# List of waves
 			eps=1.E-3, 
 			CONJUGATE = True		):
 	"""Prepares the data to be used by chi2coma.LoadFit() defined in 'chi2comaextended.py'"""
+	count_calls('getComaData')
 	raw_data = getRelevantData(waves,direct)
 	nWaves = len(waves)
 	nBins  = len(raw_data)
@@ -711,6 +729,7 @@ def getComaData(	waves,		# List of waves
 #------------------------------------------------------------------------------------------------------------------------------------
 def getComaDataNon(waves,direct):
 	"""Returns the data like 'getComaData(...)', but with noninverted coma"""
+	count_calls('getComaDataNon')
 	raw_data = getRelevantData(waves,direct)
 	nWaves = len(waves)
 	nBins  = len(raw_data)
@@ -751,6 +770,7 @@ def getComaDataNon(waves,direct):
 #------------------------------------------------------------------------------------------------------------------------------------
 def deisobarredRatio(jpc,direct, intdir='',acceptanceCorrected=True,normalizeToDiag=True):
 	"""Gives the ratio of de-isobarred to total wave"""
+	count_calls('deisobarredRatio')
 	if intdir =='':
 		tprime=filter(lambda a: a != '', direct.split('/'))[-1]
 		intdir=direct+'/../../integrals/'+tprime+'/'		
@@ -784,6 +804,7 @@ def deisobarredRatio(jpc,direct, intdir='',acceptanceCorrected=True,normalizeToD
 #------------------------------------------------------------------------------------------------------------------------------------
 def compareFits(direct1, direct2, intdir1='', intdir2='',acceptanceCorrected=True,normalizeToDiag=True):
 	"""Compares two fits by waves, if a wave does not appear in both, if compares the corresponding spin-totals"""
+	count_calls('compareFits')
 	if intdir1 =='':
 		tprime=filter(lambda a: a != '', direct1.split('/'))[-1]
 		intdir1=direct1+'/../../integrals/'+tprime+'/'
@@ -838,6 +859,7 @@ def compareFits(direct1, direct2, intdir1='', intdir2='',acceptanceCorrected=Tru
 #------------------------------------------------------------------------------------------------------------------------------------
 def getSingleIntensity( wave, fitData ):
 	"""Returns the intensity of a single wave"""
+	count_calls('getSingleIntensity')
 	points=[]
 	for dataPoint in fitData:
 		mMin=dataPoint[0]['m3Pi'][0]
@@ -866,6 +888,7 @@ def getFitCoefficient(
 			acceptanceCorrected=False,
 			normalizeToDiag=False			): 
 	"""Returns the fit coefficients from 'inFile' between the two waves."""
+	count_calls('getFitCoefficient')
 	fitData=readTextFile(inFile)
 	mMin=fitData[0]['m3Pi'][0]
 	mMax=fitData[0]['m3Pi'][1]
@@ -932,6 +955,7 @@ def get2PiSDM(
 	The de-isbarred waves have to be given as follows:
 	[{'id':'anything','jpc':'0-+','iso','f0_','M':'0'},{...},...]
 	"""
+	count_calls('PiSDM')
 	if normalizeToIntegrals:
 		integralExponent = 1
 	else:
@@ -1041,6 +1065,7 @@ def getFit2Pi(
 		normalizeToBinWidth = True,
 		keywave = keyWave		): # If not nomrlized to integrals, the points are too high. NOrmalize the by BindWidth to obtain smooth curves 
 	"""Returns the 2-Pi coefficients from 'inFile' as: [[coefficients],{info}]"""
+	count_calls('getFit')
 	if normalizeToIntegrals: ## Points are divided by int**integralExponent --> nothing happens, if integralExponent == 0.
 		integralExponent=1
 	else:
@@ -1175,6 +1200,7 @@ def getFits(
 		acceptanceCorrected=False,
 		normalizeToDiag=False		): 
 	"""Retuns the 3-Pi dependence of the fit in 'direct'"""
+	count_calls('getFits')
 	if intDir =='': 					# If no intDir is given, it look for the integrals at the usual place
 		tprime=filter(lambda a: a != '', direct.split('/'))[-1]
 		intDir=direct+'/../../integrals/'+tprime+'/'
@@ -1193,6 +1219,7 @@ def get2D(	direct,
 		normalizeToDiag=False,
 		keywave = keyWave		): 
 	"""Returns a 2-dimensional spectrum (m3Pi-m2Pi)"""
+	count_calls('get2D')
 	if intDir =='':
 		tprime=filter(lambda a: a != '', direct.split('/'))[-1]
 		intDir=direct+'/../../integrals/'+tprime+'/'
@@ -1221,6 +1248,7 @@ def getSDM2D(
 			acceptanceCorrected = False,
 			normalizeToDiag=False		 ):
 	"""Returns the 2 dimensional 2pi spin-density-matrices"""
+	count_calls('getSDM2D')
 	if intDir =='':
 		tprime=filter(lambda a: a != '', direct.split('/'))[-1]
 		intDir=direct+'/../../integrals/'+tprime+'/'
@@ -1234,8 +1262,9 @@ def getSDM2D(
 def makeArgands2Pi(data, slices, jpc):
 	"""
 	Creates 2pi argand diagrams from 'data' at 'slices'
-	'data' is the ouotput of 'get2D(...)'
+	'data' is the output of 'get2D(...)'
 	"""
+	count_calls('makeArgands2Pi')
 	argands_raw = {}
 	for slic in slices:
 		argands_raw[slic] = []
@@ -1259,6 +1288,7 @@ def getRelevantMatrices(inFile,
 			normalizeToDiag=True,
 			acceptanceCorrected=False	):
 	"""Returns the relevant matrices to calculate the spin totals for all waves in 'isobar'"""
+	count_calls('getRelevantMatrices')
 	fitData=readTextFile(inFile)
 	m3PiMin=fitData[0]['m3Pi'][0]
 	m3PiMax=fitData[0]['m3Pi'][1]
@@ -1312,6 +1342,7 @@ def getTotalPoint(
 			lookAtInput=False,
 			interference_only = False	):
 	"""Calculates one point of the spin totals"""
+	count_calls('getTotalPoint')
 	data=getRelevantMatrices(inFile,isobar, intDir,normalizeToDiag=normalizeToDiag,acceptanceCorrected=acceptanceCorrected)
 	if lookAtInput:
 		print "[T,I,coma,info]:"
@@ -1369,6 +1400,7 @@ def getTotal(
 		acceptanceCorrected=False,
 		interference_only = False	):
 	"""Gets spin totals over the whole mass range"""
+	count_calls('getTotal')
 	files=getBestFits(direct)
 	points=[]
 	for fileIn in files:
@@ -1381,6 +1413,7 @@ def getPercentages(
 		intDir='',	# Result will be normalized to the integrals, if son directory is set.
 		weightNevents=True		):
 	"""Gets the percentages of the waves intensities"""
+	count_calls('getPercentages')
 	if intDir =='':
 		tprime=filter(lambda a: a != '', direct.split('/'))[-1]
 		intDir=direct+'/../../integrals/'+tprime+'/'
@@ -1416,6 +1449,7 @@ def getPercentages(
 #------------------------------------------------------------------------------------------------------------------------------------
 def getNevents(direct):
 	"""Return the number of events over m3Pi"""
+	count_calls('getNevents')
 	files=getBestFits(direct)
 	events=[]
 	for fileIn in files:
@@ -1427,6 +1461,7 @@ def getNevents(direct):
 #####################################################################################################################################
 def writeSDM2DtoRoot(inData, fileName):
 	"""Writes the two-dimensional 2pi spin-density-matrix to a ROOT file """
+	count_calls('writeSDM2DtoRoot')
 	outROOT = root_open('./ROOT/'+fileName, mode = "RECREATE")
 	binning3=[]
 	for dataset in inData:
@@ -1472,12 +1507,14 @@ def writeSDM2DtoRoot(inData, fileName):
 #------------------------------------------------------------------------------------------------------------------------------------
 def plotArgands(data):
 	"""Plots the argand-diagrams"""
+	count_calls('plotArgands')
 	for mass in data.iterkeys():
 		plt.errorbar(data[mass][0],data[mass][2],xerr=data[mass][1],yerr=data[mass][3])
 		plt.show()
 #------------------------------------------------------------------------------------------------------------------------------------
 def plotComparison(dataSet,key='',label1='',label2='',stat='show'):
 	"""Plots the comparison of two fits"""
+	count_calls('plotComparison')
 	if not len(dataSet[0]) == len(dataSet[1]):
 		print 'Number of bins does not match'
 	for i in range(1,len(dataSet[0])):
@@ -1515,6 +1552,7 @@ def plotComparison(dataSet,key='',label1='',label2='',stat='show'):
 #------------------------------------------------------------------------------------------------------------------------------------
 def doComparison(data,name='comparison.pdf',label1='',label2=''):
 	"""Writes the comparison of two fits to a .pdf file"""
+	count_calls('doComparison')
 	pdf_pages = PdfPages(name)
 	keys=[]
 	for key in data.iterkeys():
@@ -1539,6 +1577,7 @@ def print2DtoFiles(
 	Creates a folder with files, that contain the whole two dimensional fit
 	The outout format can be used by 'Chi2.LoadDataFile(...)'
 	"""
+	count_calls('print2DtoFiles')
 	if not os.path.isdir("./"+outFolder):
 		os.makedirs("./"+outFolder)
 	dat = dataSet[0]
@@ -1565,6 +1604,7 @@ def print2PiToFile(
 			isobar='rho_',
 			M='0'			):
 	"""Prints data with 'jpc' and isobar to a file to be used by mdep-fit"""
+	count_calls('print2PiToFile')
 	if outfile =='':
 		outfile = '2pi_'+isobar+jpc.replace('-','m').replace('+','p')+'.txt'
 	fileOut=open(outfile,'w')
@@ -1620,6 +1660,7 @@ def print2PiToFile(
 #------------------------------------------------------------------------------------------------------------------------------------
 def print2PiToRoot(dataSet,outFile='fit2PiOut.root'):
 	"""Prints 2Pi data to a .root file"""
+	count_calls('print2PiToRoot')
 	listOfJpc=['0-+','1++','2-+']
 	listOfM=['0','1','2']
 	mass = str((dataSet[1]['m3Pi'][0]+dataSet[1]['m3Pi'][1])/2)
@@ -1666,6 +1707,7 @@ def print2PiToRoot(dataSet,outFile='fit2PiOut.root'):
 #------------------------------------------------------------------------------------------------------------------------------------
 def print3PiToRoot(dataSet,outFile='fit3PiOut.root'):
 	"""Prints three Pi data to a .root file"""
+	count_calls('print3PiToRoot')
 	outROOT = root_open(outFile, mode = "RECREATE")	
 	binning=[dataSet[0][0][0]]
 	for i in range(0,len(dataSet)):
@@ -1715,6 +1757,7 @@ def print2DtoRoot(
 			isobarrrs=['f0_','rho_','f2_'],		
 			suppressSigma=0		):
  	"""Prints two dimensional data to a .root file"""
+	count_calls('print2DtoRoot')
 	outROOT=root_open('./ROOT/'+outFile,mode="RECREATE")
 	for isobarrr in isobarrrs:
 		for jpc in jpcs:
@@ -1809,6 +1852,7 @@ def print2DtoRoot(
 #------------------------------------------------------------------------------------------------------------------------------------
 def printStatusToRoot(dataSet,ROOTname='fit_status.root'):
 	"""Prints a fit status to .root"""
+	count_calls('printStatusToRoot')
 	binning=[]
 	tString="t' = "+str(dataSet[0][4])+'-'+str(dataSet[0][5])+'(GeV/#it{c})^{2}'
 	for data in dataSet:
@@ -1857,6 +1901,7 @@ def printStatusToRoot(dataSet,ROOTname='fit_status.root'):
 #------------------------------------------------------------------------------------------------------------------------------------
 def prettyPrint(matrix):
 	"""Prints 'matrix' in a nice way"""
+	count_calls('prettyPrint')
 	s = [[str(e) for e in row] for row in matrix]
 	lens = [max(map(len, col)) for col in zip(*s)]
 	fmt = '\t'.join('{{:{}}}'.format(x) for x in lens)
@@ -1871,6 +1916,7 @@ def prettyPrint(matrix):
 #------------------------------------------------------------------------------------------------------------------------------------
 def init_array(n,zero = 0.):
 	"""Initializes an n x n array with 'zero' in every entry"""
+	count_calls('init_array')
 	arr = []
 	for i in range(n):
 		line =[]
@@ -1881,6 +1927,7 @@ def init_array(n,zero = 0.):
 #------------------------------------------------------------------------------------------------------------------------------------
 def isHermitian(matrix):
 	"""Checks if the matrix is hermitian"""
+	count_calls('isHermitian')
 	for i in range(0,len(matrix)):
 		for j in range(0,len(matrix)):
 			if matrix[i][j] != matrix[j][i].conjugate():
@@ -1889,6 +1936,7 @@ def isHermitian(matrix):
 #------------------------------------------------------------------------------------------------------------------------------------
 def hermitianize(matrix):
 	"""Makes the matrix hermitian"""
+	count_calls('hermitianize')
 	for i in range(0,len(matrix)):
 		for j in range(0,i):
 			matrix[i][j]=matrix[j][i].conjugate()
@@ -1896,6 +1944,7 @@ def hermitianize(matrix):
 #------------------------------------------------------------------------------------------------------------------------------------
 def isSymmetric(matrix):
 	"""Checks if the matrix is symmetric"""
+	count_calls('isSymmetric')
 	for i in range(0,len(matrix)):
 		for j in range(0,len(matrix)):
 			if abs(matrix[i][j] - matrix[j][i])>1.E-10:
@@ -1905,6 +1954,7 @@ def isSymmetric(matrix):
 #------------------------------------------------------------------------------------------------------------------------------------
 def vectorMatrixVector(vector,matrix):
 	"""Returns vector^T.matrix.vector"""
+	count_calls('vectorMatrixVector')
 	if len(matrix) != len(matrix[0]) or len(vector) != len(matrix):
 		return 'ERROR'
 	else:
@@ -1916,12 +1966,14 @@ def vectorMatrixVector(vector,matrix):
 #------------------------------------------------------------------------------------------------------------------------------------
 def rescale(matrix,vector):
 	"""Returns matrix[i][j] -> matrix[i][j]*vector[i]*vector[j]"""
+	count_calls('rescale')
 	for i in range(0,len(matrix)):
 		for j in range(0,len(matrix[0])):
 			matrix[i][j]*=vector[i]*vector[j]
 #------------------------------------------------------------------------------------------------------------------------------------
 def getFourDigits(intIn):
 	"""Returns a string of the intIn, that has at least four digits (1 -> '0001')"""
+	count_calls('getFourDigits')
 	string = str(intIn)
 	while len(string)<4:
 		string='0'+string
@@ -1929,6 +1981,7 @@ def getFourDigits(intIn):
 #------------------------------------------------------------------------------------------------------------------------------------
 def getListOfSteplikes(wave='0-+',deisobarredWave='f0_'):
 	"""Returns a list of steplike functions to be used in getTotal(...)"""
+	count_calls('getListOfSteplikes')
 	if deisobarredWave=='f0_':
 		prefixes={'0-+':'1-(0-+)0+ f0_','1++':'1-(1++)0+ f0_','2-+':'1-(2-+)0+ f0_'}
 		suffixes={'0-+':' pi S                                 ','1++':' pi P                                 ','2-+':' pi D                                 '}
@@ -1950,6 +2003,7 @@ def getListOfSteplikes(wave='0-+',deisobarredWave='f0_'):
 #------------------------------------------------------------------------------------------------------------------------------------
 def getListOfQuantumNumbers(j='',p='',c='',m=''):
 	"""Returns a list of waves with certain quantum numbers"""
+	count_calls('getListOfQuantumNumbers')
 	wavesData=open('waveData.txt','r')
 	waves=[]
 	for wave in wavesData.readlines():
@@ -1962,6 +2016,7 @@ def getListOfQuantumNumbers(j='',p='',c='',m=''):
 #------------------------------------------------------------------------------------------------------------------------------------
 def writeWaveList(inFile):
 	"""Writes the list of all waves to a file"""
+	count_calls('writeWaveList')
 	inFile=open(inFile,'r')
 	outFile=open('waveData.txt','w')
 	for line in inFile.readlines():
@@ -1972,6 +2027,7 @@ def writeWaveList(inFile):
 #------------------------------------------------------------------------------------------------------------------------------------
 def removePhaseAmbiguities(histIn):
 	"""Removes phase ambiguities from TH1D and TH2D"""
+	count_calls('removePhaseAmbiguities')
 	hist=histIn
 	className=hist.ClassName()
 	if className.startswith('TH1'):
@@ -2026,6 +2082,7 @@ def removePhaseAmbiguities(histIn):
 #------------------------------------------------------------------------------------------------------------------------------------
 def getJPCfromWave(wave): 
 	""" Get the corresponding JPC from a wave (Works only for regular waves (not FLAT or reflectivity = -1))"""
+	count_calls('getJPCfromWave')
 	jpc=wave[:9]
 	if 'f0' in wave or '(pipi)' in wave:
 		jpc = jpc +'(0++)'
@@ -2046,6 +2103,7 @@ def getJPCfromWave(wave):
 #------------------------------------------------------------------------------------------------------------------------------------
 #def invert_right_submatrix(full_coma,data_point):
 #	"""Returns the inverse of the submatrix of 'full_coma', where corresponding entries in 'data_point' are nonzero"""
+#	count_calls('invert_right_submatrix')
 #	subComa = []
 #	index_map={}
 #	nzin = 0 #NonZeroIndexNumber
@@ -2086,6 +2144,7 @@ def invert_right_submatrix(coma, flag = 'PINV', epsilon = 1.E-3):
 	'DIAG_ERRORS': Just sets the diagonal elements to 1/coma[i][i]. If this is set, chi2coma.GetComaFromErrors() has to be used in addition
 	'ANCHOR_FIRST': Inverts only the submatrix, where the first wave appears, sets all other elements to zero.
 	"""
+	count_calls('invert_right_submatrix')
 	if flag == 'EPSILON':
 		return invert_epsilon(coma,epsilon)
 	if flag == 'EPSILON_NONZERO':
@@ -2105,6 +2164,7 @@ def invert_right_submatrix(coma, flag = 'PINV', epsilon = 1.E-3):
 #------------------------------------------------------------------------------------------------------------------------------------
 def invert_epsilon(full_coma, epsilon =0., TRUE_INVERT=True):
 	"""Returns the invertes coma, without modes with eigenvalue < 'minEV'"""
+	count_calls('invert_epsilon')
 	# if True: Inverts COMA with regularized Eigenvalues, else: Gives back COMA with inverted diagonal elements (DO NOT CHANGE UNLESS YOU KNOW WHAT YOUR'RE DOING)
 	limm = epsilon # Upper limit for an EV to count as zero
 	if limm==0.:
@@ -2139,6 +2199,7 @@ def invert_epsilon(full_coma, epsilon =0., TRUE_INVERT=True):
 #------------------------------------------------------------------------------------------------------------------------------------
 def invert_epsilon_nonzero(full_coma_with_zeros, epsilon = 1.E-3):
 	"""Returns the invertes coma, without modes with eigenvalue < 'minEV' omitting complete zero lines"""
+	count_calls('invert_epsilon_nonzero')
 	fcwz = full_coma_with_zeros.tolist()
 	nWaves = len(fcwz)
 	zerolines =[]
@@ -2189,6 +2250,7 @@ def invert_epsilon_nonzero(full_coma_with_zeros, epsilon = 1.E-3):
 #------------------------------------------------------------------------------------------------------------------------------------
 def invert_intens_real(full_coma):
 	"""Inverts the submatrix corresponding only to intensities and Re(T_i T_{i+1}^*)"""
+	count_calls('invert_intens_real')
 	nWaves = int(len(full_coma)**.5)
 	intReIndices=[]
 	for i in range(nWaves):
@@ -2220,6 +2282,7 @@ def invert_intens_real(full_coma):
 #------------------------------------------------------------------------------------------------------------------------------------
 def invert_anchor(full_coma):
 	"""Inverts the submatrix corresponding only to interferences with the first wave"""	
+	count_calls('invert_anchor')
 	nWaves = int(len(full_coma)**.5)
 	intReIndices=[]
 	for i in range(len(full_coma)):
@@ -2253,6 +2316,7 @@ def invert_anchor(full_coma):
 #------------------------------------------------------------------------------------------------------------------------------------
 def invert_nonzero(matrix):
 	"""Inverts matrix, leaving out zero-lines, that would render the matrix singular"""
+	count_calls('invert_nonzero')
 	n = len(matrix)
 	arr = matrix.tolist()
 	zeros = []
@@ -2296,6 +2360,7 @@ def invert_nonzero(matrix):
 #####################################################################################################################################
 
 def do2D(name):
+	count_calls('do2D')
 	path = "/nfs/mds/user/fkrinner/massIndepententFits/fits/"+name+"/fit/0.14077-0.19435/"
 	for kw in keyWaves:
 		try:
@@ -2313,6 +2378,7 @@ def do2D(name):
 #------------------------------------------------------------------------------------------------------------------------------------
 def getSDM_complex(SDM_v):
 	"""Builds the complex spin-density-matrix out of the real-vector from used by the program"""
+	count_calls('getSDM_complex')
 	nWaves = int(len(SDM_v)**.5)
 	SDM_c = init_array(nWaves,0.+0.j)
 	for i in range(nWaves**2):
@@ -2330,6 +2396,7 @@ def getSDM_complex(SDM_v):
 #------------------------------------------------------------------------------------------------------------------------------------
 def getSubSDM_c(SDM_c):
 	"""Returns SDM with only [i][i] and [i][i+1] entries nonzero"""
+	count_calls('getSubSDM_c')
 	nWaves=len(SDM_c)
 	SDM_s = init_array(nWaves,0.+0.j)
 	for i in range(nWaves):
@@ -2340,6 +2407,7 @@ def getSubSDM_c(SDM_c):
 #------------------------------------------------------------------------------------------------------------------------------------
 def getSubSDM_v(SDM_v):
 	"""Returns vector SDM with only [i][i] and [i][i+1] entries nonzero"""
+	count_calls('getSubSDM_v')
 	nWaves = int(len(SDM_v)**.5)
 	SDM_s=SDM_v[:]
 	for i in range(len(SDM_v)):
@@ -2351,6 +2419,7 @@ def getSubSDM_v(SDM_v):
 #------------------------------------------------------------------------------------------------------------------------------------
 def reconstrucSDM_c(SDM_s):
 	"""Reconscructs the full SDM from the getSubSDM(...) output"""
+	count_calls('reconstrucSDM_c')
 	nWaves = len(SDM_s)	
 	SDM_c = init_array(nWaves,0.+0.j)
 	for i in range(nWaves):
@@ -2367,6 +2436,7 @@ def reconstrucSDM_c(SDM_s):
 	return SDM_c
 #------------------------------------------------------------------------------------------------------------------------------------
 def getSubComa(coma,SDM_vr):
+	count_calls('getSubComa')
 	if not len(coma) == len(SDM_vr):
 		print "Dimensions differ. Abort"
 		return
@@ -2380,10 +2450,12 @@ def getSubComa(coma,SDM_vr):
 #------------------------------------------------------------------------------------------------------------------------------------
 def inferSDM(i,j,SDM):
 	"""Calculates: SDM[i][j] = SDM[i+1][j] SDM[i][j-1] / SDM[i+1][j-1]^* """
+	count_calls('inferSDM')
 	return SDM[i+1][j]*SDM[i][j-1] / (SDM[i+1][j-1])
 #------------------------------------------------------------------------------------------------------------------------------------
 def rotate_phi(phi, vec):
 	"""Returns vec = {re, im, re, im,...}, rotated in the complex plane"""
+	count_calls('rotate_phi')
 	vec_r = vec[:]
 	for i in range(len(vec)/2):
 		vec_r[2*i] = math.cos(phi)*vec[2*i] - math.sin(phi)*vec[2*i+1]
@@ -2391,6 +2463,7 @@ def rotate_phi(phi, vec):
 	return vec_r
 #------------------------------------------------------------------------------------------------------------------------------------
 def rotateT(T):
+	count_calls('rotateT')
 	ab = (T[0]**2+T[1]**2)**.5
 	c = T[0]/ab
 	s = T[1]/ab
@@ -2401,6 +2474,7 @@ def rotateT(T):
 	return Tr
 #------------------------------------------------------------------------------------------------------------------------------------
 def numericalJac(T):
+	count_calls('numericalJac')
 	epsilon=1.E-10
 	jac=[]
 	Tr = rotateT(T)
@@ -2413,8 +2487,18 @@ def numericalJac(T):
 			Treps[j]/=epsilon
 		jac.append(Treps)
 	prettyPrint(jac)
-
-
+#------------------------------------------------------------------------------------------------------------------------------------
+def count_calls(name):
+	"""Since there are many methods in this file, and most of them are unused, count their calls to see, which ones are needed"""
+	try:
+		inf = open('/nfs/hicran/project/compass/analysis/fkrinner/fkrinner/trunk/massDependentFit/scripts/convertTextOutput/count_function_calls/'+name,'r')
+		count = int(inf.read())
+		inf.close()
+	except IOError:
+		count = 0
+	outf = open('/nfs/hicran/project/compass/analysis/fkrinner/fkrinner/trunk/massDependentFit/scripts/convertTextOutput/count_function_calls/'+name,'w')
+	outf.write(str(count+1))
+	outf.close()
 
 
 
