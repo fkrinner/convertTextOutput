@@ -12,6 +12,7 @@ from ROOT import TH2D
 import os  
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+import re
 
 """Collection of more or less useful functions to handle the PWA text-output"""
 
@@ -229,8 +230,19 @@ def updateDirectory(direct='./'):
 	deleteDirectory(direct)
 	getBestFits(direct)
 #------------------------------------------------------------------------------------------------------------------------------------
+def get_values(string):
+	"""Extracts the values from '(...,...)(...,...)(...,...) shaped string, where every ... is a float"""
+	count_calls('get_values')
+	valst = string.strip()[1:-1] # remove (...) at the end
+	chunks = valst.split(')(')
+	values = []
+	for chunk in chunks:
+		values.append([float(bit) for bit in chunk.split(',')])
+	return values
+
+#------------------------------------------------------------------------------------------------------------------------------------
 def readTextFile(inFile): 
-	"""Reads the text-output 'inFile' and returns [{wave: ...},[[COMA]]]"""
+	"""Reads the text-output 'inFile' and returns [{wave: ...},[[COMA]]]. Works for arbitrary rank."""
 	count_calls('readTextFile')
 	waves={}
 	print "  OPEN: "+inFile
@@ -241,43 +253,42 @@ def readTextFile(inFile):
 	nextisMasses=False
 	nextisTprime=False
 	covarianceMatrix=[]
-	nWave=0
+	prevWaves=[]
+	prevRank=1
 	for line in data.readlines():
 		if line.startswith("'"):
 			wave=line[1:61]
-			re=float(line[63:78])
-			im=float(line[79:94])
-			if len(line)== 96:									#   The marked area relies on
-				if not wave[8]=='-':#Some compromise, has to be solved better...		#   positive refelctivity waves having
-					waves[wave]=[re,im,nWave]						#   rank one and negative two
-				else:										#   
-					waves[wave[:57]+'R01']=[re,im,nWave]					#   The covariance matrix seems to have one 
-					waves[wave[:57]+'R02']=[0.,0.,nWave+1]					#   entry too much. So the amplitude
-					nWave+=1								#   Of the first neg. ref. wave 
-			elif len(line) == 129:									#   in the second rank is set to (0.+0.j)
-				waves[wave[:57]+'R01']=[re,im,nWave]						#   because it is missingin the 
-				nWave+=1									#   text output.
-				re2=float(line[96:111])								#
-				im2=float(line[112:127])							#
-				waves[wave[:57]+'R02']=[re2,im2,nWave]						#
-			nWave+=1
+			values = get_values(line.split("'")[-1])
+			re=values[0][0]
+			im=values[0][1]
+			if prevRank == len(values)-1:# Addd omitted entries for ranks != 1 (0.000,0.000)
+				rankstr ='R0'+str(len(values))
+				for i in range(1,len(values)):
+					prevWave = prevWaves[-i]
+					waves[prevWave[:60-len(rankstr)]+rankstr] = [0.,0.]	
+				if prevRank == 1: # Remove the rankless entry if necessary
+					waves[prevWave[:57]+'R01'] = waves[prevWave]	
+					waves.pop(prevWave)
+			if len(values)== 1:	
+				waves[wave]=[re,im]		
+			else:									
+				for i in range(len(values)):
+					rankstr='R0'+str(i+1)
+					waves[wave[:60-len(rankstr)]+rankstr] = [values[i][0],values[i][1]]
+			prevRank = len(values)
+			prevWaves.append(wave)
 		if enterTheMatrix:
-			covarianceMatrixLine=[]
-			modLine=line.replace('-',' -')
-			modLine=modLine.replace('E -','E-')
+			modLine=line.replace('-',' -') # Separate enries, where the '-' takes the whitespace
+			modLine=modLine.replace('E -','E-') # undo the separation from the line before, if an exponent was affected
 			modLine=modLine.strip()
-			modChunks=modLine.split()
-			for i in range(0,len(modChunks)):
-				covarianceMatrixLine.append(float(modChunks[i]))
+			covarianceMatrixLine = [float(chunk) for chunk in modLine.split()]
 			covarianceMatrix.append(covarianceMatrixLine)
 		if nextisTprime:
-			trange=line.split(';')
 			nextisTprime=False
-			waves['tprime']=[float(trange[0]),float(trange[1])]
+			waves['tprime']=[float(ttt) for ttt in line.split(';')]
 		if nextisMasses:
-			mrange=line.split(';')
 			nextisMasses=False
-			waves['m3Pi']=[float(mrange[0]),float(mrange[1])]
+			waves['m3Pi']=[float(mmm) for mmm in line.split(';')]
 		if nextisNevents:
 			nextisNevents=False
 			waves['nevents']=int(line)
@@ -289,6 +300,21 @@ def readTextFile(inFile):
 			nextisMasses=True
 		if 'Number of events' in line:
 			nextisNevents=True
+	nWave = 0
+	for wave in prevWaves: #Count the waves..
+		try:
+			waves[wave].append(nWave)
+			nWave+=1
+		except KeyError:
+			rank =1
+			while True:
+				try:
+					rankstr='R0'+str(rank)
+					waves[wave[:60-len(rankstr)]+rankstr].append(nWave)
+					nWave+=1
+					rank+=1
+				except KeyError:
+					break
 	return [waves,covarianceMatrix]	
 #------------------------------------------------------------------------------------------------------------------------------------
 def getIntegrals(
@@ -670,7 +696,7 @@ def getComaData(	waves,		# List of waves
 	for point in raw_data:
 		masss = (point[0]+point[1])/2
 		wave_on=[]						# Check, which waves are active in the current bin
-		for i in range(len(up)):					# Set all other elements to zero
+		for i in range(len(up)):				# Set all other elements to zero
 			if masss > low[i] and masss < up[i]:		# So that the wrong correlations won't be taken into account
 				wave_on.append(1.)
 			else:
@@ -684,14 +710,11 @@ def getComaData(	waves,		# List of waves
 				point[3][2*i  ][2*j+1]*=wave_on[i]*wave_on[j]			
 				point[3][2*i+1][2*j+1]*=wave_on[i]*wave_on[j]		
 #		prettyPrint(point[3])
-	
 		jacobian = []
 		data_point=[]
 		raw_coma=numpy.matrix(point[3])
 		for i in range(nWaves**2):
-			jacLine = []
-			for k in range(2*nWaves):
-				jacLine.append(0.)
+			jacLine =[0.]*2*nWaves
 			ii = int(i/nWaves)
 			jj = i - nWaves*ii
 			if ii == jj: # Intensities
@@ -740,9 +763,7 @@ def getComaDataNon(waves,direct):
 		data_point=[]
 		raw_coma=numpy.matrix(point[3])
 		for i in range(nWaves**2):
-			jacLine = []
-			for k in range(2*nWaves):
-				jacLine.append(0.)
+			jacLine = [0.]*2*nwaves
 			ii = int(i/nWaves)
 			jj = i - nWaves*ii
 			if ii == jj: # Intensities
@@ -1395,11 +1416,14 @@ def getTotalPoint(
 def getTotal(
 		direct,
 		isobar,
-		intDir=integralsDefault,
+		intDir='',
 		normalizeToDiag=True,
 		acceptanceCorrected=False,
 		interference_only = False	):
 	"""Gets spin totals over the whole mass range"""
+	if intDir =='':
+		tprime=filter(lambda a: a != '', direct.split('/'))[-1]
+		intDir=direct+'/../../integrals/'+tprime+'/'
 	count_calls('getTotal')
 	files=getBestFits(direct)
 	points=[]
@@ -1907,9 +1931,6 @@ def prettyPrint(matrix):
 	fmt = '\t'.join('{{:{}}}'.format(x) for x in lens)
 	table = [fmt.format(*row) for row in s]
 	print '\n'.join(table)
-
-
-
 #####################################################################################################################################
 ##								SOME FUNCTIONS							   ##
 #####################################################################################################################################
@@ -2223,9 +2244,7 @@ def invert_epsilon_nonzero(full_coma_with_zeros, epsilon = 1.E-3):
 	fcnz_inv = invert_epsilon(fcnz,epsilon)
 	fcwz_inv=[]
 	line_count=0
-	zero_line=[]
-	for i in range(nWaves):
-		zero_line.append(0.)
+	zero_line=[0.]*nWaves
 	for i in range(nWaves):	
 		if i in zerolines:
 			fcwz_inv.append(zero_line)
@@ -2257,12 +2276,7 @@ def invert_intens_real(full_coma):
 		intReIndices.append(i*(nWaves+1))
 		if i*(nWaves+1)+1 < nWaves**2: # Does not look for Re(T_{n-1} T_n^*) T_n does not exist
 			intReIndices.append(i*(nWaves+1)+1)
-	subcoma=[]
-	for i in intReIndices:
-		subcomaline=[]
-		for j in intReIndices:
-			subcomaline.append(0.)
-		subcoma.append(subcomaline)
+	subcoma=[[0.]*len(intReIndices)]*len(intReIndices)
 	for i in range(len(intReIndices)):
 		ii = intReIndices[i]
 		for j in range(len(intReIndices)):
@@ -2290,12 +2304,7 @@ def invert_anchor(full_coma):
 		jj = i - ii*nWaves
 		if ii ==0 or jj == 0:
 			intReIndices.append(i)
-	subcoma=[]
-	for i in intReIndices:
-		subcomaline=[]
-		for j in intReIndices:
-			subcomaline.append(0.)
-		subcoma.append(subcomaline)
+	subcoma=[[0.]*len(intReIndices)]*len(intReIndices)
 	for i in range(len(intReIndices)):
 		ii = intReIndices[i]
 		for j in range(len(intReIndices)):
@@ -2492,19 +2501,14 @@ def count_calls(name):
 	"""Since there are many methods in this file, and most of them are unused, count their calls to see, which ones are needed"""
 	try:
 		inf = open('/nfs/hicran/project/compass/analysis/fkrinner/fkrinner/trunk/massDependentFit/scripts/convertTextOutput/count_function_calls/'+name,'r')
-		count = int(inf.read())
+		try:
+			count = int(inf.read())
+		except ValueError:
+			count =0
 		inf.close()
 	except IOError:
 		count = 0
 	outf = open('/nfs/hicran/project/compass/analysis/fkrinner/fkrinner/trunk/massDependentFit/scripts/convertTextOutput/count_function_calls/'+name,'w')
 	outf.write(str(count+1))
 	outf.close()
-
-
-
-
-
-
-
-
-
+#------------------------------------------------------------------------------------------------------------------------------------

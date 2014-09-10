@@ -10,12 +10,13 @@ from rootpy.plotting import Canvas, Hist, Legend
 from ROOT import TH1D
 from ROOT import TH2D
 from ROOT import TGraphErrors
+from ROOT import TMultiGraph
 
 canv = Canvas(name = "canv0", title = "PWA")
 
 def isobarred_analysis_0pp():
 	jpcs = ['0-+','1++','2-+']
-	tbins=['0.10000-0.14077','0.14077-0.19435']#,'0.19435-0.32617','0.32617-1.00000']
+	tbins=['0.10000-0.14077','0.14077-0.19435','0.19435-0.32617','0.32617-1.00000']
 	root_name='isobarred_fit.root'
 	outROOT=root_open('./ROOT/'+root_name,mode="RECREATE")
 	totallists={
@@ -25,14 +26,14 @@ def isobarred_analysis_0pp():
 	sums = {}
 	for tbin in tbins:
 		for jpc in jpcs:
-			data = getTotal('/nfs/mds/user/fkrinner/massIndepententFits/fit/isobared/'+tbin,totallists[jpc],'/nfs/mds/user/fkrinner/massIndepententFits/integrals/pipiS/'+tbin,normalizeToDiag=False,)
+			data = getTotal('/nfs/mds/user/fkrinner/massIndepententFits/fit/isobared/'+tbin,totallists[jpc],'/nfs/mds/user/fkrinner/massIndepententFits/integrals/pipiS/'+tbin,normalizeToDiag=True)
 			binning = [data[0][0]]
 			for point in data:
 				binning.append(point[1])
 			binning= numpy.asarray(binning,dtype=numpy.float64)
 			mmin = binning[0]
 			mmax = binning[-1]
-			hist = TH1D('0++_total_of_'+jpc+"_"+tbin,'0++_total_of_'+jpc+"_"+tbin,len(binning)-1,binning)
+			hist = TH1D('isobarred_0++_total_of_'+jpc+"_"+tbin,'isobarred_0++_total_of_'+jpc+"_"+tbin,len(binning)-1,binning)
 			for i in range(len(data)):
 				hist.SetBinContent(i+1,data[i][2])
 				hist.SetBinError(i+1,data[i][3])
@@ -43,14 +44,13 @@ def isobarred_analysis_0pp():
 			print 'name:',name
 			if not sums.has_key(name):
 				sums[name] = hist
-				sums[name].SetName('sum_over_tbins_'+jpc)
+				sums[name].SetName('isobarred_sum_over_tbins_'+jpc)
 			else:
 				sums[name].Add(hist)
 	for key in sums.iterkeys():
-		print key
-		sums[name].Write()
-		sums[name].Draw()
-		canv.Print('./pdfs/'+sums[name].GetName()+".pdf")
+		sums[key].Write()
+		sums[key].Draw()
+		canv.Print('./pdfs/'+sums[key].GetName()+".pdf")
 	outROOT.close()	
 
 def isobar_analysis_0pp():
@@ -65,7 +65,7 @@ def isobar_analysis_0pp():
 		'1++':[[1.261,1.299,'below_resonance'],[1.381,1.419,'on_resonance'],[1.501,1.539,'above_resonance']],
 		'2-+':[[1.781,1.819,'below_resonance'],[1.901,1.939,'on_resonance'],[2.021,2.059,'above_resonance']]
 	}
-	X_slices = [[0.971,0.999,'f_0(980)'],[1.441,1.559,'f_0(1500)'],[0.278,2.28,'Incoherent_sum']]
+	X_slices = [[0.971,0.999,'f_0(980)'],[1.441,1.559,'f_0(1500)'],[0.2781,2.279,'Incoherent_sum']]
 	suppressSigma=0
 	tbins=['0.10000-0.14077','0.14077-0.19435','0.19435-0.32617','0.32617-1.00000']
 	sumintens={}
@@ -180,9 +180,13 @@ def isobar_analysis_0pp():
 						ime= numpy.asarray(ime,dtype=numpy.float64)
 						argand = TGraphErrors(len(re),re,im,ree,ime)
 						argand.SetName('slice_of_'+jpc+'_argand_'+name+"_"+tbin)
-						argand.Write()
+#						argand.Write()
 						argand.Draw('apl')
 						canv.Print('./pdfs/'+argand.GetName()+".pdf")
+						argand_wrapper = TMultiGraph()
+						argand_wrapper.SetName(argand.GetName())
+						argand_wrapper.Add(argand)
+						argand_wrapper.Write()
 					slcInt.SetTitle(massstring)
 					slcRe.SetTitle(massstring)
 					slcIm.SetTitle(massstring)
@@ -202,7 +206,7 @@ def isobar_analysis_0pp():
 							maxb = i+1
 						if bul > minm and bll < minm:
 							minb = i+1
-					massstring = 'm2Pi='+str(binning3Pi[minb-1])+'-'+str(binning3Pi[maxb])
+					massstring = 'm2Pi='+str(binning2Pi[minb-1])+'-'+str(binning2Pi[maxb])
 					slcInt=histIn.ProjectionX('slice_of_'+jpc+'_intens_'+name+"_"+tbin   ,minb,maxb)
 					slcRe =histRe.ProjectionX('slice_of_'+jpc+'_real_part_'+name+"_"+tbin,minb,maxb)
 					slcIm =histIm.ProjectionX('slice_of_'+jpc+'_imag_part_'+name+"_"+tbin,minb,maxb)
