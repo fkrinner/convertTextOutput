@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import re
 
-import resource
 
 """Collection of more or less useful functions to handle the PWA text-output"""
 
@@ -716,7 +715,7 @@ def getComaData(	waves,		# List of waves
 		jacobian = []
 		data_point=[]
 		raw_coma=numpy.matrix(point[3])
-		for i in range(nWaves*2):
+		for i in range(nWaves**2):
 			jacLine =[0.]*2*nWaves
 			ii = int(i/nWaves)
 			jj = i - nWaves*ii
