@@ -2276,7 +2276,10 @@ def invert_intens_real(full_coma):
 		intReIndices.append(i*(nWaves+1))
 		if i*(nWaves+1)+1 < nWaves**2: # Does not look for Re(T_{n-1} T_n^*) T_n does not exist
 			intReIndices.append(i*(nWaves+1)+1)
-	subcoma=[[0.]*len(intReIndices)]*len(intReIndices)
+	subcoma=[]
+	for i in intReIndices:
+		subcomaline=[0.]*len(intReIndices)
+		subcoma.append(subcomaline)
 	for i in range(len(intReIndices)):
 		ii = intReIndices[i]
 		for j in range(len(intReIndices)):
@@ -2304,7 +2307,10 @@ def invert_anchor(full_coma):
 		jj = i - ii*nWaves
 		if ii ==0 or jj == 0:
 			intReIndices.append(i)
-	subcoma=[[0.]*len(intReIndices)]*len(intReIndices)
+	subcoma=[]
+	for i in intReIndices:
+		subcomaline=[0.]*len(intReIndices)
+		subcoma.append(subcomaline)
 	for i in range(len(intReIndices)):
 		ii = intReIndices[i]
 		for j in range(len(intReIndices)):
