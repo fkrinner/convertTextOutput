@@ -10,9 +10,12 @@ from rootpy.plotting import Canvas, Hist, Legend
 from ROOT import TH1D
 from ROOT import TH2D
 import os  
+import sys
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import re
+
+import resource
 
 """Collection of more or less useful functions to handle the PWA text-output"""
 
@@ -713,7 +716,7 @@ def getComaData(	waves,		# List of waves
 		jacobian = []
 		data_point=[]
 		raw_coma=numpy.matrix(point[3])
-		for i in range(nWaves**2):
+		for i in range(nWaves*2):
 			jacLine =[0.]*2*nWaves
 			ii = int(i/nWaves)
 			jj = i - nWaves*ii
@@ -2283,7 +2286,6 @@ def invert_intens_real(full_coma):
 			jj = intReIndices[j]
 			subcoma[i][j] = full_coma[ii,jj]
 	subcoma = numpy.matrix(subcoma)
-#	print subcoma
 	subcoma_inv = invert_nonzero(subcoma)
 	full_coma_inv=numpy.zeros((len(full_coma),len(full_coma)))
 	full_coma_inv=numpy.matrix(full_coma_inv)
@@ -2311,7 +2313,6 @@ def invert_anchor(full_coma):
 			jj = intReIndices[j]
 			subcoma[i][j] = full_coma[ii,jj]
 	subcoma = numpy.matrix(subcoma)
-#	print subcoma
 	subcoma_inv = invert_nonzero(subcoma)
 	full_coma_inv=numpy.zeros((len(full_coma),len(full_coma)))
 	full_coma_inv=numpy.matrix(full_coma_inv)
