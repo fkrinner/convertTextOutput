@@ -257,13 +257,17 @@ def readTextFile(inFile):
 	covarianceMatrix=[]
 	prevWaves=[]
 	prevRank=1
+        FLAT_count = 0 # Handle the FLAT special, since it may contain DECK amplitudes
 	for line in data.readlines():
 		if line.startswith("'"):
 			wave=line[1:61]
+			if "FLAT" in wave:
+				wave = get_flat_name(inFile,FLAT_count) # determines, whether the FLAT is really a Deck...
+				FLAT_count+=1
 			values = get_values(line.split("'")[-1])
 			re=values[0][0]
 			im=values[0][1]
-			if prevRank == len(values)-1:# Addd omitted entries for ranks != 1 (0.000,0.000)
+			if prevRank == len(values)-1:# Add omitted entries for ranks != 1 (0.000,0.000)
 				rankstr ='R0'+str(len(values))
 				for i in range(1,len(values)):
 					prevWave = prevWaves[-i]
@@ -319,6 +323,48 @@ def readTextFile(inFile):
 					break
 	return [waves,covarianceMatrix]	
 #------------------------------------------------------------------------------------------------------------------------------------
+def get_flat_name(
+			inFile, 
+			FLAT_number,	
+			search_type = "FIT_RESULT"	):
+	"""Returns the type of a 'FLAT' wave, since e.g. Deck amplitudes are also named Deck"""
+	count_calls('get_flat_name')
+	if search_type == "FIT_RESULT":		
+		direct = os.path.dirname(inFile)+"/../"
+	if search_type == "INTEGRALS":
+		direct = os.path.dirname(inFile)+'/'
+	card_name=''
+	for fn in os.listdir(direct):
+		if "card_" in fn or fn == "card.dat":
+			card_name = direct+fn
+			break
+
+	if card_name=='':
+		return 'unnamed_FLAT(no_card)                                        '
+
+	card = open(card_name,'r')
+	FLAT_count = 0
+	was_FLAT = False
+	for line in card.readlines():
+		if was_FLAT:
+			if FLAT_count == FLAT_number:
+				if line.startswith("*IWAVENAM_NAMDEP"):
+					name = line.split("'")[1]
+				else:
+					name = "FLAT"
+					if FLAT_count > 0:
+						name+=str(FLAT_count)
+				while len(name) < 60:
+					name+=' '
+				return name
+			else:
+				FLAT_count+=1
+		if line.startswith("*IWAVENAM") and "FLAT" in line and not line[0] =="C":
+			was_FLAT = True
+		else:
+			was_FLAT = False
+	return 'unnamed_FLAT                                                '
+#------------------------------------------------------------------------------------------------------------------------------------
 def getIntegrals(
 			inFile	): 
 	"""Returns diagonal integrals in 'inFile' (real) as {wave: integral}"""
@@ -329,9 +375,14 @@ def getIntegrals(
 	waves=[]
 	intMap={}
 	nWave=0
+	FLAT_count = 0
 	for line in data.readlines():
 		if line.startswith("'"):
-			waves.append(line[1:61])
+			wave_name = line[1:61]
+			if "FLAT" in wave_name:
+				wave_name = get_flat_name(inFile,FLAT_count,"INTEGRALS")
+				FLAT_count+=1
+			waves.append(wave_name)
 		if enterTheMatrix:
 			nWave+=1
 			chunks=line.split('(')
@@ -355,9 +406,14 @@ def getIntegralMatrix(
 	waves=[]
 	intMap={}
 	nWave=0
+	FLAT_count = 0
 	for line in data.readlines():
 		if line.startswith("'"):
-			waves.append(line[1:61])
+			wave_name = line[1:61]
+			if "FLAT" in wave_name:
+				wave_name = get_flat_name(inFile,FLAT_count,"INTEGRALS")
+				FLAT_count+=1
+			waves.append(wave_name)
 		if enterTheMatrix:
 			integralLine=[]
 			chunks=line.split('(')

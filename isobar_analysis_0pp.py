@@ -65,7 +65,7 @@ def isobar_analysis_0pp():
 		'1++':[[1.261,1.299,'below_resonance'],[1.381,1.419,'on_resonance'],[1.501,1.539,'above_resonance']],
 		'2-+':[[1.781,1.819,'below_resonance'],[1.901,1.939,'on_resonance'],[2.021,2.059,'above_resonance']]
 	}
-	X_slices = [[0.971,0.999,'f_0(980)'],[1.441,1.559,'f_0(1500)'],[0.2781,2.279,'Incoherent_sum']]
+	X_slices = [[0.961,0.999,'f_0(980)'],[1.401,1.559,'f_0(1500)'],[0.2781,2.279,'Incoherent_sum']]
 	suppressSigma=0
 	tbins=['0.10000-0.14077','0.14077-0.19435','0.19435-0.32617','0.32617-1.00000']
 	sumintens={}
