@@ -254,6 +254,7 @@ def readTextFile(inFile):
 	nextisNevents=False
 	nextisMasses=False
 	nextisTprime=False
+	nextisLike=False
 	covarianceMatrix=[]
 	prevWaves=[]
 	prevRank=1
@@ -298,6 +299,9 @@ def readTextFile(inFile):
 		if nextisNevents:
 			nextisNevents=False
 			waves['nevents']=int(line)
+		if nextisLike:
+			nextisLike=  False
+			waves['likelihood']=float(line)
 		if 'missing rank entries' in line:
 			enterTheMatrix=True
 		if "t' bin" in line:
@@ -306,6 +310,8 @@ def readTextFile(inFile):
 			nextisMasses=True
 		if 'Number of events' in line:
 			nextisNevents=True
+		if 'log(likelihood)' in line:
+			nextisLike=True
 	nWave = 0
 	for wave in prevWaves: #Count the waves..
 		try:
@@ -313,7 +319,9 @@ def readTextFile(inFile):
 			nWave+=1
 		except KeyError:
 			rank =1
+			countWTR = 0
 			while True:
+				countWTR +=1
 				try:
 					rankstr='R0'+str(rank)
 					waves[wave[:60-len(rankstr)]+rankstr].append(nWave)
@@ -321,6 +329,8 @@ def readTextFile(inFile):
 					rank+=1
 				except KeyError:
 					break
+				if countWTR > 1000:
+					raise Exception("'while True:' loop seems to be stuck. Rank > 1000 seems not right")
 	return [waves,covarianceMatrix]	
 #------------------------------------------------------------------------------------------------------------------------------------
 def get_flat_name(
@@ -345,6 +355,7 @@ def get_flat_name(
 	card = open(card_name,'r')
 	FLAT_count = 0
 	was_FLAT = False
+	unnamed_FLAT = False
 	for line in card.readlines():
 		if was_FLAT:
 			if FLAT_count == FLAT_number:
@@ -352,8 +363,9 @@ def get_flat_name(
 					name = line.split("'")[1]
 				else:
 					name = "FLAT"
-					if FLAT_count > 0:
+					if not unnamed_FLAT:
 						name+=str(FLAT_count)
+						unnamed_FLAT = True
 				while len(name) < 60:
 					name+=' '
 				return name
@@ -1013,7 +1025,7 @@ def getFitCoefficient(
 		try:
 #			phaseJac[i]=1./(1.+re**2./im**2.)*(1./re*imJac[i]-im/re**2.*reJac[i]) # Looks like there was something wrong here
 			phaseJac[i]=1./(1.+im**2./re**2.)*(1./re*imJac[i]-im/re**2.*reJac[i])
-		except:
+		except ZeroDivisionError:
 			phaseJac[i]=0.
 	int1err=vectorMatrixVector(int1Jac,coma)**(.5)
 	int2err=vectorMatrixVector(int2Jac,coma)**(.5)
@@ -1318,6 +1330,91 @@ def get2D(	direct,
 #	del plotInfo['jpc']
 	fitData.sort()
 	return [fitData,plotInfo]
+#------------------------------------------------------------------------------------------------------------------------------------
+def getFit(	direct	):
+	"""
+	Returns all intensies for the fit in 'direct'
+	"""
+	count_calls('getFit')
+	fileList = getBestFits(direct)
+	nBins = len(fileList)
+	results = []
+	exclusionList=['m3Pi']
+	for i in range(nBins):
+		actResult = readTextFile(fileList[i][0])
+		mmin = actResult[0]['m3Pi'][0]
+		mmax = actResult[0]['m3Pi'][1]
+		results.append([mmin,mmax,actResult])
+	results.sort()
+	binning = [results[0][0]]	
+	plots={}
+	special_entries = ['m3Pi','tprime','nevents','likelihood']
+	DO_PHASES = True
+	for i in range(nBins):
+		result = results[i]
+		binning.append(result[1])
+		for key in result[2][0].iterkeys():
+			if not plots.has_key(key.strip()) and not key in exclusionList:
+				if key in ['likelihood','nevents','tprime']:
+					plots[key.strip()] = [0 for i in range(nBins)]
+				else:
+					plots[key.strip()] = [[0.,0.] for i in range(nBins)]
+			if key in ['likelihood','nevents']:
+				plots[key.strip()][i] = result[2][0][key]
+			elif key == 'tprime': # Just store lower t' limit, will be the same for all
+				plots[key.strip()][i] = result[2][0][key][0]
+			elif key not in exclusionList:
+				nevents = result[2][0]['nevents']
+				nWave = result[2][0][key][2]
+				re = result[2][0][key][0]
+				im = result[2][0][key][1]
+				coma = [	[	result[2][1][2*nWave  ][2*nWave  ],		result[2][1][2*nWave  ][2*nWave+1]	],
+						[	result[2][1][2*nWave+1][2*nWave  ],		result[2][1][2*nWave+1][2*nWave+1]	]	]
+				intens = (re**2 + im**2)*nevents
+				erintens= 4*re*re*coma[0][0] + 4*im*re*coma[1][0] + 4*re*im*coma[0][1] + 4*im*im*coma[1][1]
+				erintens**=.5
+				erintens*=nevents
+				plots[key.strip()][i] = [intens,erintens]
+			if DO_PHASES:
+				for key2 in result[2][0].iterkeys():
+					if not key2 in special_entries and not key in special_entries:
+						phaseKey = 'phase(_'+key.strip()+'_-_'+key2.strip()+')'
+						if not plots.has_key(phaseKey):
+							plots[phaseKey] = [[0.,0.] for i in range(nBins)]
+						re1 = result[2][0][key ][0]
+						im1 = result[2][0][key ][1]
+						nn1 = result[2][0][key ][2]
+						re2 = result[2][0][key2][0]
+						im2 = result[2][0][key2][1]
+						nn2 = result[2][0][key2][2]
+						coma = [	[result[2][1][2*nn1  ][2*nn1  ], result[2][1][2*nn1  ][2*nn1+1], result[2][1][2*nn1  ][2*nn2  ], result[2][1][2*nn1  ][2*nn2+1]],
+								[result[2][1][2*nn1+1][2*nn1  ], result[2][1][2*nn1+1][2*nn1+1], result[2][1][2*nn1+1][2*nn2  ], result[2][1][2*nn1+1][2*nn2+1]],
+								[result[2][1][2*nn2  ][2*nn1  ], result[2][1][2*nn2  ][2*nn1+1], result[2][1][2*nn2  ][2*nn2  ], result[2][1][2*nn2  ][2*nn2+1]],
+								[result[2][1][2*nn2+1][2*nn1  ], result[2][1][2*nn2+1][2*nn1+1], result[2][1][2*nn2+1][2*nn2  ], result[2][1][2*nn2+1][2*nn2+1]]	]
+						re=re1*re2+im1*im2
+						im=im1*re2-im2*re1
+						if re == 0. or im == 0.:
+							phase = 0.
+							errPha= 0. 
+						else:
+							phase=math.atan2(im,re)
+							reJac=[re2,im2,re1,im1]
+							imJac=[-im2,re2,im1,-re1]
+							phaseJac=[0,0,0,0]
+							for ii in range(0,4):
+								try:
+									phaseJac[ii]=1./(1.+im**2./re**2.)*(1./re*imJac[ii]-im/re**2.*reJac[ii])
+								except ZeroDivisionError:
+									phaseJac[ii]=0.
+							errPha = 0.
+							for ii in range(len(coma)):
+								for jj in range(len(coma)):
+									errPha+=phaseJac[ii]*phaseJac[jj]*coma[ii][jj]
+							if errPha <0 and errPha > -1.E-10:
+								errPha=0.
+							errPha**=.5
+						plots[phaseKey][i] = [phase,errPha]
+	return binning,plots
 #------------------------------------------------------------------------------------------------------------------------------------
 def getSDM2D(		
 			direct,
@@ -1829,6 +1926,39 @@ def print3PiToRoot(dataSet,outFile='fit3PiOut.root'):
 	hiIm.Write()
 	hiPh.Write()
 	outROOT.Close()
+#------------------------------------------------------------------------------------------------------------------------------------
+def printFitToRoot(
+			plots,
+			binning,
+			rootName	):
+	"""
+	Writes the plots int plots to a ROOT file
+	"""
+	count_calls('printFitToRoot')
+	outROOT = root_open('./ROOT/'+rootName,mode="RECREATE")
+	binning = numpy.asarray(binning,dtype=numpy.float64)
+	keys=[]
+	for key in plots.iterkeys():
+		keys.append(key)
+	keys.sort()
+	for key in keys:
+		hist = TH1D(key,key,len(binning)-1,binning)
+		has_errors = True
+		try:
+			len(plots[key][0])
+		except TypeError:
+			has_errors = False
+		for i in range(len(binning)-1):
+			if has_errors:
+				hist.SetBinContent(i+1,plots[key][i][0])
+				hist.SetBinError(i+1,plots[key][i][1])
+			else:
+				hist.SetBinContent(i+1,plots[key][i])
+		if 'phase' in hist.GetName():
+			hist = removePhaseAmbiguities(hist)
+
+		hist.Write()
+	outROOT.close()
 #------------------------------------------------------------------------------------------------------------------------------------
 def print2DtoRoot(
 			dataSet,
