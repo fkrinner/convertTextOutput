@@ -12,10 +12,12 @@ from ROOT import TH1D
 from ROOT import TH2D
 import numpy
 from vector import vector
+from vector import remove_vector_from_onb
 from convertTextOutput import get2D
+from sys import exit
 
 def getAmplitudes(jpc, M, isob, m3pi, path):
-	imported = get2D(path,keywave='none')
+	imported = get2D(path,keywave='none',normalizeToIntegrals=False)
 	rightpoints=[]	
 #	print imported
 	for point in imported[0]:
@@ -98,6 +100,7 @@ def compare_diag_offdiag(wave1,wave2,base1,base2,mMin,mMax,intDir):
 	binning1=[]
 	binning2=[]
 	for key in integrals[0].iterkeys():
+		print key, wave1, wave2
 		if key.startswith(base1):
 			nwaves1.append(integrals[0][key])
 			mup = float(key.split('_')[2][:4])/1000
@@ -109,7 +112,7 @@ def compare_diag_offdiag(wave1,wave2,base1,base2,mMin,mMax,intDir):
 #			print key
 		if key.startswith(wave1):
 			nwave1 = integrals[0][key]
-#			print key
+			print key,'<---- nwave1'
 		if key.startswith(base2):
 			nwaves2.append(integrals[0][key])
 			mup = float(key.split('_')[2][:4])/1000
@@ -122,7 +125,7 @@ def compare_diag_offdiag(wave1,wave2,base1,base2,mMin,mMax,intDir):
 #			print key
 		if key.startswith(wave2):
 			nwave2 = integrals[0][key]
-#			print key,'<---- nwave2'
+			print key,'<---- nwave2'
 	binning1.sort()
 	binning2.sort()
 	nwaves1.sort()
@@ -142,11 +145,11 @@ def compare_diag_offdiag(wave1,wave2,base1,base2,mMin,mMax,intDir):
 	for nn in nwaves1:
 		for mm in nwaves2:
 			offd_c+=integrals[1][nn][mm]
-	print diag1, diag1_c
-	print diag2, diag2_c
-	print offd, offd_c
-	print offd/(diag1*diag2)**.5
-	print binning1,binning2
+#	print diag1, diag1_c
+#	print diag2, diag2_c
+#	print offd, offd_c
+#	print offd/(diag1*diag2)**.5
+#	print binning1,binning2
 	binning1 = numpy.asarray(binning1,dtype=numpy.float64)
 	binning2 = numpy.asarray(binning2,dtype=numpy.float64)
 	hist= TH2D('2d','2d',len(binning1)-1,binning1, len(binning2)-1, binning2)
@@ -249,6 +252,7 @@ def get_bad_vector(base1,base2,mMin,mMax,intDir):
 			maxi = i
 			maxev = abs(val[i])
 
+	minval = val[mini].real
 
 #	print '------------------------------------------'
 #	print minev,maxev,mini,maxi
@@ -261,12 +265,36 @@ def get_bad_vector(base1,base2,mMin,mMax,intDir):
 #			outfile.write(str(i)+'  '+str(vec[mini][i].real)+'  '+str(vec[maxi][i].real)+'\n')
 	minvec = vector([vec[mini][i].real for i in range(DIM)])
 	maxvec = vector([vec[maxi][i].real for i in range(DIM)])
-	return minvec, maxvec
+#	return minvec, maxvec
+	with open('minvec','w') as minnn:
+		for val in minvec:
+			minnn.write(str(val)+'  ')
+	with open('diag_f0','w') as diagout:
+		for nnn in nwaves1:
+			diagout.write(str(integrals[1][nnn][nnn].real)+'  ')
+
+	with open('diag_rho','w') as diagout:
+		for nnn in nwaves2:
+			diagout.write(str(integrals[1][nnn][nnn].real)+'  ')
+
+	return minval
 
 if __name__ == "__main__":
-	minvec = get_bad_vector('1-(1++)0+ f0_','1-(1++)0+ rho_',1.50,1.54,'/nfs/mds/user/fkrinner/massIndepententFits/fits/0pp_1mm_2pp_in1pp_MC/integrals/0.14077-0.19435')
-	minvec.normalize()
+	canv = Canvas(width=1000,height=1000)
+#	with open('min_egenvalues_over_mass_bin.txt','w') as oouutt:
+#		for i in range(200):
+#			minval = get_bad_vector('1-(1++)0+ f0_','1-(1++)0+ rho_',.50+i*.01,.51+i*.01,'/nfs/mds/user/fkrinner/massIndepententFits/fits/tst/integrals/0.10000-0.14077')	
+#			oouutt.write(str(i)+'  '+str(minval)+'\n')
+
+	get_bad_vector('1-(1++)0+ f0_','1-(1++)0+ rho_',1.50,1.54,'/nfs/mds/user/fkrinner/massIndepententFits/fits/tst/integrals/0.10000-0.14077')	
+
+#	minvec.normalize()
 	
+	hist = compare_diag_offdiag('1-(1++)0+ (pipi)_S pi P','1-(1++)0+ rho pi S','1-(1++)0+ f0_','1-(1++)0+ rho_',1.50,1.54,'/nfs/mds/user/fkrinner/massIndepententFits/fits/tst/integrals/0.10000-0.14077')
+	hist.Draw('col')
+	exit(1)##################################
+
+
 #	print minvec
 	dat_f0 = getAmplitudes('1++', '0', 'f0_',  1.52,'/nfs/mds/user/fkrinner/massIndepententFits/fits/0pp_1mm_2pp_in1pp_MC/fit/0.14077-0.19435')
 	dat_rho= getAmplitudes('1++', '0', 'rho_',1.52,'/nfs/mds/user/fkrinner/massIndepententFits/fits/0pp_1mm_2pp_in1pp_MC/fit/0.14077-0.19435')
@@ -277,5 +305,53 @@ if __name__ == "__main__":
 	with open('outfile.txt','w') as out:
 		for i in range(len(dat)):
 			out.write(str(i)+"  "+str(abs(dat[i])**2)+"  "+str(abs(dat_new[i])**2)+"  "+str(minvec[i])+'\n')
+	n_f0 =len(dat_f0)
+	n_rho = len(dat_rho)
+
+	bad_f0 = minvec[:n_f0]
+	bad_f0.normalize()
+	basis_f0=[]
+	for i in range(n_f0):
+		basis_f0.append(vector([0.]*n_f0))
+		basis_f0[i][i] = 1.
+	
+	bad_rho = minvec[n_f0:]
+	bad_f0.normalize()
+	basis_rho =[]
+	for i in range(n_rho):
+		basis_rho.append(vector([0.]*n_rho))
+		basis_rho[i][i] = 1.
 
 
+	rembas_f0=remove_vector_from_onb(basis_f0,bad_f0)
+	rembas_rho=remove_vector_from_onb(basis_rho,bad_rho)
+	with open("outfile.txt",'w') as out:
+		dim = len(rembas_f0[0])
+		for i in range(dim):
+			out.write(str(i))
+			for bv in rembas_f0:
+				out.write("  "+str(bv[i]))
+			out.write("\n")
+
+	dim=len(rembas_f0)
+	for i in range(dim):
+		sp = rembas_f0[i]*bad_f0
+		for j in range(dim):
+			sp = rembas_f0[i]*rembas_f0[j]
+
+	for i in range(len(rembas_f0)):
+		with open('./ONB_f0/'+str(i),'w') as fill:
+			rembas_f0[i] = vector([0.]*len(rembas_f0[i]))
+			rembas_f0[i][i] = 1.
+			for val in rembas_f0[i]:
+				fill.write(str(val)+"  ")
+
+	for i in range(len(rembas_rho)):
+		with open('./ONB_rho/'+str(i),'w') as fill:
+			rembas_rho[i] = vector([0.]*len(rembas_rho[i]))
+			rembas_rho[i][i] = 1.
+			for val in rembas_rho[i]:
+				fill.write(str(val)+"  ")
+
+
+	print len(rembas_rho)

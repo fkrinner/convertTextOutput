@@ -39,10 +39,16 @@ class vector:
 
 	def __str__(self):
 		return "vector"+str(self.vec)
-	
+
 	def __getitem__(self,i):
 		return self.vec[i]
-		
+	
+	def __getslice__(self,*args):
+		return vector(self.vec.__getslice__(*args))
+
+	def __setitem__(self,i,val):
+		self.vec[i] = val		
+
 
 	def __len__(self):
 		return len(self.vec)
@@ -53,6 +59,7 @@ class vector:
 
 	def normalize(self):
 		self/=abs(self)
+		return self
 
 	def conjugate(self):
 		return vector([val.conjugate() for val in self.vec])
@@ -77,7 +84,7 @@ def remove_vector_from_onb(onb,rem):
 #			print "after rem_prev:",norm_rem*new_basis_vector,new_basis_vector
 		try:
 			newabs = abs(new_basis_vector)
-			if newabs < 1.E-14:
+			if newabs < 1.E-12:
 				raise ZeroDivisionError
 			new_basis_vector/=newabs
 #			print "append:",new_basis_vector

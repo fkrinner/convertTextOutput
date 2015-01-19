@@ -1331,7 +1331,7 @@ def get2D(	direct,
 	fitData.sort()
 	return [fitData,plotInfo]
 #------------------------------------------------------------------------------------------------------------------------------------
-def getFit(	direct	):
+def getFit(	direct	, DO_PHASES = True):
 	"""
 	Returns all intensies for the fit in 'direct'
 	"""
@@ -1349,7 +1349,6 @@ def getFit(	direct	):
 	binning = [results[0][0]]	
 	plots={}
 	special_entries = ['m3Pi','tprime','nevents','likelihood']
-	DO_PHASES = True
 	for i in range(nBins):
 		result = results[i]
 		binning.append(result[1])
