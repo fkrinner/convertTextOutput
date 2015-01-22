@@ -4,7 +4,7 @@ import numpy.linalg as la
 from random import random
 import minuit
 
-def getData(path,compares):
+def getData(path,compares,WRITE = False):
 	"""calculates the amplitudes with the correct coefficients for the unphysical modes"""
 	intFolder = path.replace("/fit/","/integrals/").split("text_fit_")[0]
 	bestLikeFile = getBestLike(path)
@@ -23,6 +23,10 @@ def getData(path,compares):
 	keyList = []
 	for key in isoBases.iterkeys():
 		keyList.append(key)
+	if len(keyList) < 2: # If only one wave is de-isobarred, no additional comparefile is needed. To avoid the exception at (*), use the original data as compares
+		comparedata.append(rawData)
+	if len(keyList) == 0:
+		return {}
 	oneRow=[]
 	starts=[]
 	for key in keyList:
@@ -39,7 +43,7 @@ def getData(path,compares):
 				except KeyError:
 					pass
 			if not len(oneRow[-1]) == 9:
-				raise IndexError # No compare-vector found.
+				raise IndexError # No compare-vector found. (*)
 #			print oneRow[-1]
 	goodMatrix=[]
 
@@ -118,15 +122,28 @@ def getData(path,compares):
 	for i in range(dim):
 		for j in range(dim):
 			reconstruct[i]+=coeff[j]*eigen[j][1][i]
-	with open("./de_isobarred_corrected/no_modes",'w') as outoutout:
-		for i in range(dim):
-			outoutout.write(str(i)+' '+str((abs(rowResult[i])**2*normalizers[i]).real)+' '+str((abs(reconstruct[i])**2*normalizers[i]).real)+' '+str(abs(comResult[i])**2*normalizers[i].real) +'\n')
-	valolo.sort()
-	with open("de_isobarred_corrected/val",'w') as outoutout:
-		for i in range(len(valolo)):
-			outoutout.write(str(i)+' '+str(valolo[i])+'\n')
-#	print starts
 
+	if WRITE:
+		with open("./de_isobarred_corrected/no_modes",'w') as outoutout:
+			for i in range(dim):
+				outoutout.write(str(i)+' '+str((abs(rowResult[i])**2*normalizers[i]).real)+' '+str((abs(reconstruct[i])**2*normalizers[i]).real)+' '+str(abs(comResult[i])**2*normalizers[i].real) +'\n')
+#	valolo.sort()
+#	with open("de_isobarred_corrected/val",'w') as outoutout:
+#		for i in range(len(valolo)):
+#			outoutout.write(str(i)+' '+str(valolo[i])+'\n')
+#	print starts
+	#starts, comResult, keyList
+	mapResult = {}
+	actNkey = -1
+	for i in range(len(comResult)):
+		if i in starts:
+			actNkey+=1
+			actKey = keyList[actNkey]
+			mapResult[actKey] = []
+		mapResult[actKey].append(comResult[i])
+#	print mapResult	
+
+	return mapResult
 
 def get_physical_coefficients_intens(result, compare, vectors, start = None): # use start just for interfacing, not needed with intenistites
 	"""Fits the coefficients to the compare-points. At the moment a workaraound for 2 or four parameters"""
@@ -155,8 +172,9 @@ def get_physical_coefficients_intens(result, compare, vectors, start = None): # 
 def chi22(result, compare, vectors, coeff, start = None):
 	"""Gives a Chi2 for the unphysical modes to minimize"""
 	chi2 = 0.
+#	start.append(len(coeff))
 	for i in range(len(result)):
-#	for i in range(start[2],len(result)):
+#	for i in range(start[0],start[1]):
 		act = result[i]
 		for j in range(len(vectors)):
 			act -= coeff[j] * vectors[j][i]
@@ -250,9 +268,9 @@ def eigenBasis(matrix):
 			aa[i,j] = matrix[i][j]	
 
 	val,vec = la.eig(aa)
-	with open("./de_isobarred_corrected/evs",'w') as outoutout:
-		for i in range(dim):
-			outoutout.write(str(i)+' '+str(val[i].real)+'\n')
+#	with open("./de_isobarred_corrected/evs",'w') as outoutout:
+#		for i in range(dim):
+#			outoutout.write(str(i)+' '+str(val[i].real)+'\n')
 
 	eigen = []
 	for i in range(dim):

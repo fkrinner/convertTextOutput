@@ -59,12 +59,12 @@ def getLike(inFile):
 	for line in data.readlines():
 		if nextIsLike:
 			like=float(line)
-			if nevents >0:
+			if nevents > 0:
 				data.close()
 				return like
 			else:
 				data.close()
-				return -1.E10
+				return float('nan')
 		if nextIsNevents:
 			nevents = int(line)
 			nextIsNevents=False
@@ -73,7 +73,7 @@ def getLike(inFile):
 		if 'Number of events' in line:
 			nextIsNevents=True
 	data.close()
-	return -1.E10
+	return float('nan')
 #------------------------------------------------------------------------------------------------------------------------------------
 def getFitStatus(inFile): 
 	"""Retuns [mMin,mMax,nevents,likelihood,t'Min,t'Max]"""
@@ -132,13 +132,14 @@ def getEvents(inFile):
 def getBestLike(direct='.'): 
 	"""Returns the file with the bes log-likelihood in the directory 'direct'"""
 	count_calls('getBestLike')
-	maxLike=-1.E10
+	maxLike = float('nan')
+#	maxLike=-1.E10
 	bestFile=''
 	for fn in os.listdir(direct):
     		if os.path.isfile(direct+'/'+fn):
 			likeNew=getLike(direct+'/'+fn)
 			print "  Found file with likelihood: "+str(likeNew)
-			if maxLike<likeNew:
+			if maxLike<likeNew or not maxLike == maxLike:
 				maxLike=likeNew
 				bestFile=fn
 	print "Best file is: '"+bestFile+"'"
