@@ -136,8 +136,8 @@ def getBestLike(direct='.'):
 #	maxLike=-1.E10
 	bestFile=''
 	for fn in os.listdir(direct):
-    		if os.path.isfile(direct+'/'+fn):
-			likeNew=getLike(direct+'/'+fn)
+    		if os.path.isfile(direct+os.sep+fn):
+			likeNew=getLike(direct+os.sep+fn)
 			print "  Found file with likelihood: "+str(likeNew)
 			if maxLike<likeNew or not maxLike == maxLike:
 				maxLike=likeNew
@@ -151,19 +151,19 @@ def getTotalFitStatus(direct='./'):
 	data=[]
 	for fn in os.listdir(direct):
 		if 'text_fit_' in fn:
-			for fn2 in os.listdir(direct+'/'+fn):
-				if os.path.isfile(direct+'/'+fn+'/'+fn2):
-					print " -  Read file .../"+fn2
-					data.append(getFitStatus(direct+'/'+fn+'/'+fn2))
+			for fn2 in os.listdir(direct+os.sep+fn):
+				if os.path.isfile(direct+os.sep+fn+os,sep+fn2):
+					print " -  Read file ..."+os.sep+fn2
+					data.append(getFitStatus(direct+os.sep+fn+os.sep+fn2))
 	return data
 #------------------------------------------------------------------------------------------------------------------------------------
-def getBestFits(inDirect='./'): 
+def getBestFits(inDirect=os.curdir+os.sep): 
 	"""Returns a list of files with the best log-likelihoods"""
 	count_calls('getBestFits')
 	direct=inDirect
 	while True: # Remove // from path so it can be found in the 'bestFits.txt' even if //, /// or ... is given in the path
 		directOld=direct
-		direct=direct.replace('//','/')
+		direct=direct.replace(os.sep+os.sep,os.sep)
 		if direct == directOld:
 			break
 	fits=[]
@@ -190,8 +190,8 @@ def getBestFits(inDirect='./'):
 				chunks=fn.split('_')
 				m3PiMin=float(chunks[5])/1000
 				m3PiMax=float(chunks[6])/1000	
-				bestFile=getBestLike(direct+'/'+fn)
-				fits.append([direct+'/'+fn+'/'+bestFile,m3PiMin,m3PiMax])
+				bestFile=getBestLike(direct+os.sep+fn)
+				fits.append([direct+os.sep+fn+os.sep+bestFile,m3PiMin,m3PiMax])
 		store=open('bestFits.txt','a')
 		store.write('DIRECTORY: '+direct+'\n')
 		for i in range(0,len(fits)):
@@ -199,13 +199,13 @@ def getBestFits(inDirect='./'):
 		store.close()
 	return fits		
 #------------------------------------------------------------------------------------------------------------------------------------
-def deleteDirectory(inDirect='./'):
+def deleteDirectory(inDirect=os.curdir+os.sep):
 	"""Deletes a directory from the 'bestFits.txt' file (e.g., if more attempts are made)"""
 	count_calls('deleteDirectory')
 	direct=inDirect
 	while True:
 		directOld=direct
-		direct=direct.replace('//','/')
+		direct=direct.replace(os.sep+os.sep,os.sep)
 		if direct == directOld:
 			break
 	if os.path.isfile('bestFits.txt'):
@@ -227,7 +227,7 @@ def deleteDirectory(inDirect='./'):
 	else:
 		print "Directory not found in 'bestFits.txt'."
 #------------------------------------------------------------------------------------------------------------------------------------
-def updateDirectory(direct='./'):
+def updateDirectory(direct=os.curdir+os.sep):
 	"""Updates a directory in the 'bestFits.txt' file"""
 	count_calls('updateDirectory')
 	deleteDirectory(direct)
@@ -341,9 +341,9 @@ def get_flat_name(
 	"""Returns the type of a 'FLAT' wave, since e.g. Deck amplitudes are also named Deck"""
 	count_calls('get_flat_name')
 	if search_type == "FIT_RESULT":		
-		direct = os.path.dirname(inFile)+"/../"
+		direct = os.path.dirname(inFile)+os.sep+".."+os.sep
 	if search_type == "INTEGRALS":
-		direct = os.path.dirname(inFile)+'/'
+		direct = os.path.dirname(inFile)+os.sep
 	card_name=''
 	for fn in os.listdir(direct):
 		if "card_" in fn or fn == "card.dat":
@@ -462,8 +462,8 @@ def getIntegralAverage(
 			mFileMin=float(chunks[1])/1000
 			mFileMax=float(chunks[2])/1000
 			if mFileMax-0.005>=m3PiMin and mFileMin<=m3PiMax-0.005: #the 0.005 are there, to avoid rounding errors.
-				filesInRange.append(intDir+'/'+fn)
-				print '   - '+intDir+'/'+fn
+				filesInRange.append(intDir+os.sep+fn)
+				print '   - '+intDir+os.sep+fn
 	ints=[]
 	for intFile in filesInRange:
 		ints.append(getIntegrals(intFile))
@@ -495,8 +495,8 @@ def getIntegralMatrixAverage(m3PiMin,m3PiMax,intDir=integralsDefault,normalizeTo
 			mFileMin=float(chunks[1])/1000
 			mFileMax=float(chunks[2])/1000
 			if mFileMax-0.005>=m3PiMin and mFileMin<=m3PiMax-0.005: #the 0.005 are there, to avoid rounding errors.
-				filesInRange.append(intDir+'/'+fn)
-				print '   - '+intDir+'/'+fn
+				filesInRange.append(intDir+os.sep+fn)
+				print '   - '+intDir+os.sep+fn
 	ints=[]
 	for intFile in filesInRange:
 #		print "::reading::\n"+intFile
@@ -864,8 +864,8 @@ def deisobarredRatio(jpc,direct, intdir='',acceptanceCorrected=True,normalizeToD
 	"""Gives the ratio of de-isobarred to total wave"""
 	count_calls('deisobarredRatio')
 	if intdir =='':
-		tprime=filter(lambda a: a != '', direct.split('/'))[-1]
-		intdir=direct+'/../../integrals/'+tprime+'/'		
+		tprime=filter(lambda a: a != '', direct.split(os.sep))[-1]
+		intdir=direct+os.sep+os.pardir+os.sep+os.pardir+os.sep+'integrals'+os.sep+tprime+os.sep		
 	data=getWholeFit( direct )
 	if jpc == '0++':
 		deiso = 'f0_'
@@ -898,11 +898,11 @@ def compareFits(direct1, direct2, intdir1='', intdir2='',acceptanceCorrected=Tru
 	"""Compares two fits by waves, if a wave does not appear in both, if compares the corresponding spin-totals"""
 	count_calls('compareFits')
 	if intdir1 =='':
-		tprime=filter(lambda a: a != '', direct1.split('/'))[-1]
-		intdir1=direct1+'/../../integrals/'+tprime+'/'
+		tprime=filter(lambda a: a != '', direct1.split(os.sep))[-1]
+		intdir1=direct1+os.sep+os.pardir+os.sep+os.pardir+os.sep+'integrals'+os.sep+tprime+os.sep
 	if intdir2 =='':
-		tprime=filter(lambda a: a != '', direct2.split('/'))[-1]
-		intdir2=direct2+'/../../integrals/'+tprime+'/'
+		tprime=filter(lambda a: a != '', direct2.split(os.sep))[-1]
+		intdir2=direct2+os.sep+os.pardir+os.sep+os.pardir+os.sep+'integrals'+os.sep+tprime+os.sep
 	data1=getWholeFit( direct1 )
 	data2=getWholeFit( direct2 )
 	matched={}
@@ -1294,8 +1294,8 @@ def getFits(
 	"""Retuns the 3-Pi dependence of the fit in 'direct'"""
 	count_calls('getFits')
 	if intDir =='': 					# If no intDir is given, it look for the integrals at the usual place
-		tprime=filter(lambda a: a != '', direct.split('/'))[-1]
-		intDir=direct+'/../../integrals/'+tprime+'/'
+		tprime=filter(lambda a: a != '', direct.split(os.sep))[-1]
+		intDir=direct+os.sep+os.pardir+os.sep+os.pardir+os.sep+'integrals'+os.sep+tprime+os.sep
 	fileList=getBestFits(direct)
 	fitData=[]
 	for i in range(0,len(fileList)):
@@ -1313,8 +1313,8 @@ def get2D(	direct,
 	"""Returns a 2-dimensional spectrum (m3Pi-m2Pi)"""
 	count_calls('get2D')
 	if intDir =='':
-		tprime=filter(lambda a: a != '', direct.split('/'))[-1]
-		intDir=direct+'/../../integrals/'+tprime+'/'
+		tprime=filter(lambda a: a != '', direct.split(os.sep))[-1]
+		intDir=direct+os.sep+os.pardir+os.sep+os.pardir+os.sep+'integrals'+os.sep+tprime+os.sep
 	fileList=getBestFits(direct)
 	fitData=[]
 	for i in range(len(fileList)):
@@ -1426,8 +1426,8 @@ def getSDM2D(
 	"""Returns the 2 dimensional 2pi spin-density-matrices"""
 	count_calls('getSDM2D')
 	if intDir =='':
-		tprime=filter(lambda a: a != '', direct.split('/'))[-1]
-		intDir=direct+'/../../integrals/'+tprime+'/'
+		tprime=filter(lambda a: a != '', direct.split(os.sep))[-1]
+		intDir=direct+os.sep+os.pardir+os.sep+os.pardir+os.sep+'integrals'+os.sep+tprime+os.sep
 	fileList=getBestFits(direct)
 	fitData=[]	
 	for i in range(len(fileList)):
@@ -1577,8 +1577,8 @@ def getTotal(
 		interference_only = False	):
 	"""Gets spin totals over the whole mass range"""
 	if intDir =='':
-		tprime=filter(lambda a: a != '', direct.split('/'))[-1]
-		intDir=direct+'/../../integrals/'+tprime+'/'
+		tprime=filter(lambda a: a != '', direct.split(os.sep))[-1]
+		intDir=direct+os.sep+os.pardir+os.sep+os.pardir+os.sep+'integrals'+os.sep+tprime+os.sep
 	count_calls('getTotal')
 	files=getBestFits(direct)
 	points=[]
@@ -1594,8 +1594,8 @@ def getPercentages(
 	"""Gets the percentages of the waves intensities"""
 	count_calls('getPercentages')
 	if intDir =='':
-		tprime=filter(lambda a: a != '', direct.split('/'))[-1]
-		intDir=direct+'/../../integrals/'+tprime+'/'
+		tprime=filter(lambda a: a != '', direct.split(os.sep))[-1]
+		intDir=direct+os.sep+os.pardir+os.sep+os.pardir+os.sep+'integrals'+os.sep+tprime+os.sep
 	fits=getBestFits(direct)
 	sizeMap={}
 	nEvents=1
@@ -1641,7 +1641,7 @@ def getNevents(direct):
 def writeSDM2DtoRoot(inData, fileName):
 	"""Writes the two-dimensional 2pi spin-density-matrix to a ROOT file """
 	count_calls('writeSDM2DtoRoot')
-	outROOT = root_open('./ROOT/'+fileName, mode = "RECREATE")
+	outROOT = root_open(os.curdir+os.sep+'ROOT'+os.sep+fileName, mode = "RECREATE")
 	binning3=[]
 	for dataset in inData:
 		if not dataset[0] in binning3:
@@ -1757,8 +1757,8 @@ def print2DtoFiles(
 	The outout format can be used by 'Chi2.LoadDataFile(...)'
 	"""
 	count_calls('print2DtoFiles')
-	if not os.path.isdir("./"+outFolder):
-		os.makedirs("./"+outFolder)
+	if not os.path.isdir(os.curdir+os.sep+outFolder):
+		os.makedirs(os.curdir+os.sep+outFolder)
 	dat = dataSet[0]
 	ms  = {}
 	for point in dat:
@@ -1772,7 +1772,7 @@ def print2DtoFiles(
 				str2 = str2 + '0'
 			ms[mmed]=(str1+"_"+str2).replace('.','')
 	for m in ms.iterkeys():
-		print2PiToFile(dataSet,m,'./'+outFolder+'/'+ms[m]+'.dat',jpc,isobar,M)
+		print2PiToFile(dataSet,m,os.curdir+os.sep+outFolder+os.sep+ms[m]+'.dat',jpc,isobar,M)
 
 #------------------------------------------------------------------------------------------------------------------------------------
 def print2PiToFile(
@@ -1935,7 +1935,7 @@ def printFitToRoot(
 	Writes the plots int plots to a ROOT file
 	"""
 	count_calls('printFitToRoot')
-	outROOT = root_open('./ROOT/'+rootName,mode="RECREATE")
+	outROOT = root_open(os.curdir+os.sep+'ROOT'+os.sep+rootName,mode="RECREATE")
 	binning = numpy.asarray(binning,dtype=numpy.float64)
 	keys=[]
 	for key in plots.iterkeys():
@@ -1970,7 +1970,7 @@ def print2DtoRoot(
 			suppressSigma=0		):
  	"""Prints two dimensional data to a .root file"""
 	count_calls('print2DtoRoot')
-	outROOT=root_open('./ROOT/'+outFile,mode="RECREATE")
+	outROOT=root_open(os.curdir+os.sep+'ROOT'+os.sep+outFile,mode="RECREATE")
 	for isobarrr in isobarrrs:
 		for jpc in jpcs:
 			for M in Ms:
@@ -2685,16 +2685,17 @@ def numericalJac(T):
 #------------------------------------------------------------------------------------------------------------------------------------
 def count_calls(name):
 	"""Since there are many methods in this file, and most of them are unused, count their calls to see, which ones are needed"""
-	try:
-		inf = open('/nfs/hicran/project/compass/analysis/fkrinner/fkrinner/trunk/massDependentFit/scripts/convertTextOutput/count_function_calls/'+name,'r')
-		try:
-			count = int(inf.read())
-		except ValueError:
-			count =0
-		inf.close()
-	except IOError:
-		count = 0
-	outf = open('/nfs/hicran/project/compass/analysis/fkrinner/fkrinner/trunk/massDependentFit/scripts/convertTextOutput/count_function_calls/'+name,'w')
-	outf.write(str(count+1))
-	outf.close()
+	pass 
+#	try:
+#		inf = open('/nfs/hicran/project/compass/analysis/fkrinner/fkrinner/trunk/massDependentFit/scripts/convertTextOutput/count_function_calls/'+name,'r')
+#		try:
+#			count = int(inf.read())
+#		except ValueError:
+#			count =0
+#		inf.close()
+#	except IOError:
+#		count = 0
+#	outf = open('/nfs/hicran/project/compass/analysis/fkrinner/fkrinner/trunk/massDependentFit/scripts/convertTextOutput/count_function_calls/'+name,'w')
+#	outf.write(str(count+1))
+#	outf.close()
 #------------------------------------------------------------------------------------------------------------------------------------

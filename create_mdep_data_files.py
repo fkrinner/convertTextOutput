@@ -1,6 +1,7 @@
 from convertTextOutput import readTextFile, getBestFits
 import numpy as np
 import numpy.linalg as la
+import os
 
 
 def get_raw_data_coma(
@@ -38,6 +39,7 @@ def get_raw_data_coma(
 	return [data,coma]
 
 def own_pinv(matrix, minev =0.):
+	"""Own implementation of the pseudo inverse for symmetric matrices"""
 	val,vec = la.eig(matrix)
 	dim = len(val)
 	new = np.zeros((dim,dim))
@@ -127,7 +129,8 @@ def write_files(
 			lower_lims, 
 			method = 'pinv',
 			name_base_data = 'data_', 
-			name_base_coma = 'coma_'):
+			name_base_coma = 'coma_',
+			FULL_COMA = True):
 	"""Writes data and coma files for fit results in the source_dirs (one for each t' bin) for waveset to  target_dir"""
 	i=0
 	for source_dir in source_dirs:
@@ -140,7 +143,8 @@ def write_files(
 					lower_lims, 
 					method = method, 
 					name_base_data = name_base_data, 
-					name_base_coma = name_base_coma)
+					name_base_coma = name_base_coma,
+					FULL_COMA = FULL_COMA)
 		i+=1
 
 def write_files_tbin(
@@ -152,7 +156,8 @@ def write_files_tbin(
 			lower_lims,
 			method = 'pinv',
 			name_base_data = 'data_', 
-			name_base_coma = 'coma_'):
+			name_base_coma = 'coma_',
+			FULL_COMA = True):
 	"""Writes data and coma files for one t' bin"""
 	file_list = getBestFits(source_dir)
 	file_list.sort(key = lambda x:x[1])
@@ -181,54 +186,83 @@ def write_files_tbin(
 				inverted = invert_coma(SDM_data_coma[1],method)
 				written = 0
 				for i in range(nWaves**2):
-					for j in range(nWaves**2):
-						written +=1
-						if not inverted[i][j].imag == 0.:
-							print i,j,inverted[i][j],"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+					if FULL_COMA:
+						for j in range(nWaves**2):
+							written +=1
+							if not inverted[i][j].imag == 0.:
+								print i,j,inverted[i][j]
+								raise ValueError # Non Real Coma
+							out_coma.write(str(inverted[i][j].real)+' ')
+							nWrite+=1
+					else:
+						written+=1
+						if not inverted[i][i].imag == 0.:
+							print i,i,inverted[i][i]
 							raise ValueError # Non Real Coma
-						out_coma.write(str(inverted[i][j].real)+' ')
+						out_coma.write(str(inverted[i][i].real)+' ')
 						nWrite+=1
 				out_coma.write('\n')
 
+def is_tprime_dir(string):
+	"""Checks if a foldername cooresponds to a t' bin as Dima's program does"""
+	try:
+		float(string.split('-')[0])
+	except ValueError:
+		return False
+	try:
+		string.split('-')[1]
+		try:
+			float(string.split('-')[1])
+		except ValueError:
+			return False
+	except IndexError:
+		return False
+	return True
+
+
 if __name__ == "__main__":
-	sources = [	"/nfs/mds/user/fhaas/PWA/fits/2008-all-lH-DT0/PHD/best_11tbins/0.100000-0.112853",
-			"/nfs/mds/user/fhaas/PWA/fits/2008-all-lH-DT0/PHD/best_11tbins/0.112853-0.127471",
-			"/nfs/mds/user/fhaas/PWA/fits/2008-all-lH-DT0/PHD/best_11tbins/0.127471-0.144385",
-			"/nfs/mds/user/fhaas/PWA/fits/2008-all-lH-DT0/PHD/best_11tbins/0.144385-0.164401",
-			"/nfs/mds/user/fhaas/PWA/fits/2008-all-lH-DT0/PHD/best_11tbins/0.164401-0.188816",
-			"/nfs/mds/user/fhaas/PWA/fits/2008-all-lH-DT0/PHD/best_11tbins/0.188816-0.219907",
-			"/nfs/mds/user/fhaas/PWA/fits/2008-all-lH-DT0/PHD/best_11tbins/0.219907-0.262177",
-			"/nfs/mds/user/fhaas/PWA/fits/2008-all-lH-DT0/PHD/best_11tbins/0.262177-0.326380",
-			"/nfs/mds/user/fhaas/PWA/fits/2008-all-lH-DT0/PHD/best_11tbins/0.326380-0.448588",
-			"/nfs/mds/user/fhaas/PWA/fits/2008-all-lH-DT0/PHD/best_11tbins/0.448588-0.724294",
-			"/nfs/mds/user/fhaas/PWA/fits/2008-all-lH-DT0/PHD/best_11tbins/0.724294-1.000000"]
+
+	sources = []
+#	sourcedir = '/nfs/mds/user/fhaas/PWA/fits/2008-all-lH-DT0/PHD/best_22tbins/'
+	sourcedir = '/nfs/mds/user/fhaas/PWA/fits/2008-all-lH-DT0/PHD/best_11tbins/'
+#	sourcedir = '/nfs/mds/user/fkrinner/massIndepententFits/fits/deck_fabi_thresh/fit/'
+	for fn in os.listdir(sourcedir):
+		if is_tprime_dir(fn):
+			sources.append(sourcedir+os.sep+fn)
+	sources.sort()
+
+
 
 	waves = [	"1-(1++)0+ rho pi S",
-			"1-(1-+)1+ rho pi P",
-			"1-(1++)0+ rho pi D",
-			"1-(0-+)0+ f0(980) pi S",
-			"1-(2++)1+ f2 pi P",
-			"1-(2++)1+ rho pi D",
-			"1-(2++)2+ rho pi D",
-			"1-(2-+)0+ f2 pi D",
-			"1-(2-+)0+ f2 pi S",
-			"1-(2-+)0+ rho pi F",
-			"1-(2-+)1+ f2 pi S",
-			"1-(4++)1+ f2 pi F",
-			"1-(4++)1+ rho pi G"]
-
-	uppers = [2.3,2.0,2.1,2.3,2.0,2.0,2.0,2.3,2.3,2.1,2.3,2.3,2.3 ]
-	lowers = [0.9,0.9,0.9,1.2,1.0,0.9,1.0,1.6,1.4,1.2,1.4,1.4,1.25]
+#			"1-(1-+)1+ rho pi P",
+#			"1-(1++)0+ rho pi D",
+#			"1-(0-+)0+ f0(980) pi S",
+#			"1-(2++)1+ f2 pi P",
+			"1-(2++)1+ rho pi D"]#,
+#			"1-(2++)2+ rho pi D",
+#			"1-(2-+)0+ f2 pi D",
+#			"1-(2-+)0+ f2 pi S",
+#			"1-(2-+)0+ rho pi F",
+#			"1-(2-+)1+ f2 pi S",
+#			"1-(4++)1+ f2 pi F",
+#			"1-(4++)1+ rho pi G"]
 
 
-	write_files(	"/nfs/mds/user/fkrinner/data_mdep_fit/testFiles",
+	uppers_13 = [2.3,2.0,2.1,2.3,2.0,2.0,2.0,2.3,2.3,2.1,2.3,2.3,2.3 ]
+	lowers_13 = [0.9,0.9,0.9,1.2,1.0,0.9,1.0,1.6,1.4,1.2,1.4,1.4,1.25]
+
+	uppers = [uppers_13[0],uppers_13[5]]
+	lowers = [lowers_13[0],lowers_13[5]]
+
+	write_files(	"/nfs/mds/user/fkrinner/data_mdep_fit/deck_1pp",
 			sources,
 			waves,
 			uppers,
 			lowers,
 			"diag",
-			"testDataOld_",
-			"testComaOld_")
+			"data_nodeck",
+			"coma_nodeck",
+			FULL_COMA =False)
 	
 
 
