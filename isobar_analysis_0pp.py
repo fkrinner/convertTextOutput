@@ -53,21 +53,41 @@ def isobarred_analysis_0pp():
 		canv.Print('./pdfs/'+sums[key].GetName()+".pdf")
 	outROOT.close()	
 
+def to_60(string):
+	while len(string) < 60:
+		string += ' '
+	return string
+
+
+def make_f0_wavelist(mmin,mmax,prefix,suffix):
+	binns = ['0278', '0320', '0360', '0400', '0440', '0480', '0520', '0560', '0600', '0640', '0680', '0720', '0760', '0800', '0840', '0880', '0920', '0930', '0940', '0950', '0960', '0970', '0980', '0990', '1000', '1010', '1020', '1030', '1040', '1050', '1060', '1070', '1080', '1120', '1160', '1200', '1240', '1280', '1320', '1360', '1400', '1440', '1480', '1520', '1560', '1600', '1640', '1680', '1720', '1760', '1800', '1840', '1880', '1920', '1960', '2000', '2040', '2080', '2120', '2160', '2200', '2240', '2280']
+	retwaves = []
+	for i in range(len(binns)-1):
+		up = float(binns[i+1])/1000
+		low= float(binns[i])/1000
+		if up >= mmin and low <= mmax:
+			retwaves.append(to_60(prefix+binns[i]+'_'+binns[i+1]+suffix))
+	return retwaves
+
 def isobar_analysis_0pp():
 	"""Does the 2D isobar analysis, based on 'print2DtoRoot', with all cuts, argands and what not"""
 	root_name='isobar_analysis.root'
 	outROOT=root_open('./ROOT/'+root_name,mode="RECREATE")
 	isobar = 'f0_'
 	jpcs = ['0-+','1++','2-+']
+#	jpcs = ['0-+']
 	M='0'
 	iso_slices = { # do not use bin borders in definitions, a bin will be used, if any part of the defined interval overlaps with the bin #hence the *.**1 and *.**9 at the end of each definition
 		'0-+':[[1.661,1.699,'below_resonance'],[1.781,1.819,'on_resonance'],[1.901,1.939,'above_resonance']],
 		'1++':[[1.261,1.299,'below_resonance'],[1.381,1.419,'on_resonance'],[1.501,1.539,'above_resonance']],
 		'2-+':[[1.781,1.819,'below_resonance'],[1.901,1.939,'on_resonance'],[2.021,2.059,'above_resonance']]
 	}
+	prefixes = {'0-+':'1-(0-+)0+ f0_','1++':'1-(1++)0+ f0_','2-+':'1-(2-+)0+ f0_'}
+        suffixes = {'0-+':' pi S','1++':' pi P','2-+':' pi D'}
 	X_slices = [[0.961,0.999,'f_0(980)'],[1.401,1.559,'f_0(1500)'],[0.2781,2.279,'Incoherent_sum']]
 	suppressSigma=0
 	tbins=['0.10000-0.14077','0.14077-0.19435','0.19435-0.32617','0.32617-1.00000']
+#	tbins=['0.10000-0.14077']
 	sumintens={}
 	for tbin in tbins:
 		dataSet = get2D('/nfs/mds/user/fkrinner/massIndepententFits/fit/pipiS/'+tbin, '/nfs/mds/user/fkrinner/massIndepententFits/integrals/pipiS/'+tbin ,normalizeToIntegrals = False)
@@ -174,6 +194,11 @@ def isobar_analysis_0pp():
 							ree.append(slcRe.GetBinError(i))
 							ime.append(slcIm.GetBinError(i))			
 					if len(re)>0 and len(re) == len(im) and len(re) == len(ree) and len(re) == len(ime):
+						while re[-1] ==0. and im[-1]==0.: # Kill the last (zero) point
+							re = re[:-1]
+							im = im[:-1]
+							ree=[:-1]
+							ime=[:-1]
 						re= numpy.asarray(re,dtype=numpy.float64)
 						im= numpy.asarray(im,dtype=numpy.float64)
 						ree= numpy.asarray(ree,dtype=numpy.float64)
@@ -199,6 +224,23 @@ def isobar_analysis_0pp():
 					minm = slic[0]
 					maxm = slic[1]
 					name = slic[2]
+					total_list = make_f0_wavelist(minm,maxm,prefixes[jpc],suffixes[jpc])
+#					if name == 'f_0(1500)':
+#						print total_list
+#						raise Exception
+					total_data = getTotal('/nfs/mds/user/fkrinner/massIndepententFits/fit/pipiS/'+tbin,total_list, '/nfs/mds/user/fkrinner/massIndepententFits/integrals/pipiS/'+tbin,normalizeToDiag=True)
+					total_binning = [total_data[0][0]]
+					for total_point in total_data:
+						total_binning.append(total_point[1])
+					total_binning= numpy.asarray(total_binning,dtype=numpy.float64)
+					total_mmin = total_binning[0]
+					total_mmax = total_binning[-1]
+					total_hist = TH1D('coherent_sum_of_'+jpc+'_'+name+'_'+tbin,'coherent_sum_of_'+jpc+'_'+name+'_'+tbin,len(total_binning)-1,total_binning)
+					total_hist.GetXaxis().SetTitle("Mass of the #pi^{#font[122]{-}}#pi^{#font[122]{+}}#pi^{#font[122]{-}} System (GeV/#it{c}^{2})")
+					histIn.GetZaxis().SetTitle("Intensity of "+jpc+addString)
+					for i in range(len(total_data)):
+						total_hist.SetBinContent(i+1,total_data[i][2])
+						total_hist.SetBinError(i+1,total_data[i][3])
 					for i in range(len(binning2Pi)-1):
 						bul = binning2Pi[i+1]
 						bll = binning2Pi[i]
@@ -215,10 +257,12 @@ def isobar_analysis_0pp():
 					slcRe.SetTitle(massstring)
 					slcIm.SetTitle(massstring)
 					slcPha.SetTitle(massstring)
+					total_hist.SetTitle(massstring)
 					slcInt.Write()
 					slcRe.Write()
 					slcIm.Write()
 					slcPha.Write()
+					total_hist.Write()
 					slcInt.Draw()
 					canv.Print('./pdfs/'+slcInt.GetName()+".pdf")
 					if not sumintens.has_key(name+"_"+jpc):
@@ -233,3 +277,6 @@ def isobar_analysis_0pp():
 	outROOT.close()
 	print "ran with no exceptions"
 
+if __name__ == "__main__":
+	
+	isobar_analysis_0pp()

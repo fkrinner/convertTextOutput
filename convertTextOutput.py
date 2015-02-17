@@ -1200,7 +1200,10 @@ def getFit2Pi(
 					im=fitData[0][wave][1]*nEvents**(.5)/integral**integralExponent
 				else:
 					re=0.
-					im=0.		
+					im=0.
+				if re==0. and im==0.: # Do this to suppress bad poitns at the end of phasespace
+					integral = 0.
+		
 				nRe=2*fitData[0][wave][2]
 				jpc=wave[3:6]
 				M=wave[7]
@@ -1215,6 +1218,8 @@ def getFit2Pi(
 						[fitData[1][nIm][nRe],	fitData[1][nIm][nIm],	0. 		    ,	0.			],
 						[0. 		     ,	0. 		    ,	0. 		    ,	0.			],
 						[0. 		     ,	0. 		    ,	0. 		    ,	0.			]]
+
+
 				if integral!=0:
 					rescale(coma,[nEvents**(.5)/integral**integralExponent,nEvents**(.5)/integral**integralExponent,nEvents**(.5)/intKey**integralExponent,nEvents**(.5)/intKey**integralExponent])
 				elif isKey:

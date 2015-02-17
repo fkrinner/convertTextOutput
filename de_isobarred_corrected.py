@@ -135,6 +135,9 @@ def getData(path,compares,WRITE = False):
 	#starts, comResult, keyList
 	mapResult = {}
 	actNkey = -1
+	for i in range(dim):
+		comResult[i]*=normalizers[i].real**.5
+
 	for i in range(len(comResult)):
 		if i in starts:
 			actNkey+=1
@@ -309,7 +312,31 @@ def getDeIsobarredList(rawData):
 
 
 if __name__ == "__main__":
-	getData("/nfs/mds/user/fkrinner/massIndepententFits/fits/0pp_1mm_2pp_in1pp_MC/fit/0.14077-0.19435/text_fit_0.14077-0.19435.dat_1.50000_1_1500_1540_0141_0194",
+	aaa = getData("/nfs/mds/user/fkrinner/massIndepententFits/fits/0pp_1mm_2pp_in1pp_MC/fit/0.14077-0.19435/text_fit_0.14077-0.19435.dat_1.50000_1_1500_1540_0141_0194",
 		[	"/nfs/mds/user/fkrinner/massIndepententFits/fits/0pp_in1pp_MC/fit/0.14077-0.19435/text_fit_0.14077-0.19435.dat_1.50000_1_1500_1540_0141_0194",
 			"/nfs/mds/user/fkrinner/massIndepententFits/fits/1mm_in1pp_MC/fit/0.14077-0.19435/text_fit_0.14077-0.19435.dat_1.50000_1_1500_1540_0141_0194",
 			"/nfs/mds/user/fkrinner/massIndepententFits/fits/2pp_in1pp_MC/fit/0.14077-0.19435/text_fit_0.14077-0.19435.dat_1.50000_1_1500_1540_0141_0194"])
+
+#	aaa = getData(	"/nfs/mds/user/fkrinner/massIndepententFits/fits/PWA_bs_test_12_0/fit/0.14077-0.19435/text_fit_0.14077-0.19435.dat_1.50000_1_1500_1540_0141_0194",
+#		[	"/nfs/mds/user/fkrinner/massIndepententFits/fits/PWA_bs_test_12_0_0/fit/0.14077-0.19435/text_fit_0.14077-0.19435.dat_1.50000_1_1500_1540_0141_0194",
+#			"/nfs/mds/user/fkrinner/massIndepententFits/fits/PWA_bs_test_12_0_1/fit/0.14077-0.19435/text_fit_0.14077-0.19435.dat_1.50000_1_1500_1540_0141_0194",
+#			"/nfs/mds/user/fkrinner/massIndepententFits/fits/PWA_bs_test_12_0_2/fit/0.14077-0.19435/text_fit_0.14077-0.19435.dat_1.50000_1_1500_1540_0141_0194"])
+
+	intens = []
+	bin_f0=[0.278, .320, .360,  .400,  .440,  .480,  .520,  .560,  .600,  .640,  .680,  .720,  .760,  .800,  .840,  .880,  .920,  .930,  .940,  .950,  .960,  .970,  .980,  .990,  1.000,  1.010,  1.020,  1.030,  1.040,  1.050,  1.060,  1.070,  1.080,  1.120,  1.160,  1.200,  1.240,  1.280,  1.320,  1.360,  1.400,  1.440,  1.480,  1.520,  1.560,  1.600,  1.640,  1.680,  1.720,  1.760,  1.800,  1.840,  1.880,  1.920,  1.960,  2.000,  2.040,  2.080,  2.120,  2.160,  2.200,  2.240,  2.280]
+	bin_rho=[0.278, 0.32, 0.36, 0.4, 0.44, 0.48, 0.52, 0.56, 0.6, 0.64, 0.68, 0.7, 0.72, 0.74, 0.76, 0.78, 0.8, 0.82, 0.84, 0.86, 0.88, 0.9, 0.92, 0.96, 1.0, 1.04, 1.08, 1.12, 1.16, 1.2, 1.24, 1.28, 1.32, 1.36, 1.4, 1.44, 1.48, 1.52, 1.56, 1.6, 1.64, 1.68, 1.72, 1.76, 1.8, 1.84, 1.88, 1.92, 1.96, 2.0, 2.04, 2.08, 2.12, 2.16, 2.2, 2.24, 2.28]
+
+
+
+	for point in aaa['1-(1++)0+ f0']:
+		intens.append(abs(point)**2)
+	with open("out_2mp",'w') as outoutout:
+		for i in range(len(intens)):
+			outoutout.write(str((bin_f0[i]+bin_f0[i+1])/2)+' '+str(intens[i])+'\n')
+	
+
+
+
+
+
+
