@@ -135,13 +135,13 @@ def write_files(
 ##################################################################
 # Chose method by only one flag
 ##################################################################
-	if not method in ["old","pinv","diag"]:
+	if not Method in ["old","pinv","diag"]:
 		print "Method not defined"
 		raise ValueError
 	if Method == "old":
 		method = "diag"
 		FULL_COMA = False
-	elif Method == "diag"
+	elif Method == "diag":
 		method = "diag"
 		FULL_COMA = True
 	elif Method == "pinv":
