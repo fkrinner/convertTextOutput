@@ -1,7 +1,63 @@
-from convertTextOutput import readTextFile, getBestFits
+from convertTextOutput import readTextFile, getBestFits, getComaData
 import numpy as np
 import numpy.linalg as la
 import os
+import sys
+
+
+def write_anchor(target_dir,
+		direct, 		# directory of the fit
+		tbin_identifier,
+		waves,			# wave names to be used
+		upLims,			# mass limits for the waves
+		loLims,
+		name_data = 'data_',
+		name_coma = 'coma_',
+		CONJUGATE=True ):	# Conjugate the fit result.
+	"""Write text files to be read by the chi2 class"""
+	nWaves = len(waves)
+	for i in range(1,len(upLims)):
+		if upLims[i] > upLims[0] or loLims[i] < loLims[0]:
+			print "First wave has to be active everywhere"
+			raise ValueError
+
+	data = getComaData(waves,upLims,loLims,direct, flagg='ANCHOR_FIRST', eps=1.E-3, CONJUGATE=CONJUGATE)
+	pointsSorted=[]
+	indices=[0]
+	for i in range(1,nWaves):
+		indices.append(i*nWaves) 
+		indices.append(i)
+
+	reduced_dat = []
+	reduced_coma= []
+	for bin in range(len(data[0])):
+		dats = data[0][bin]
+		dats_red=[]
+		for i in indices:
+			dats_red.append(dats[i])
+		reduced_dat.append(dats_red)
+		coma = data[1][bin]
+		coma_red = []
+		for i in indices:
+			coma_line = []
+			for j in indices:				
+				coma_line.append(coma[i][j])
+			coma_red.append(coma_line)
+		reduced_coma.append(coma_red)
+	datFile = open(target_dir+os.sep+name_data+tbin_identifier,'w')
+	comaFile= open(target_dir+os.sep+name_coma+tbin_identifier,'w')
+	for bin in range(len(reduced_dat)):
+		dat = reduced_dat[bin]
+		for ptt in dat:
+			datFile.write(str(ptt)+'   ')
+		coma = reduced_coma[bin]
+		for line in coma:
+			for ptt in line:
+				comaFile.write(str(ptt)+'   ')
+		comaFile.write('\n')
+		datFile.write('\n')
+	comaFile.close()
+	datFile.close()
 
 
 def get_raw_data_coma(
@@ -135,31 +191,43 @@ def write_files(
 ##################################################################
 # Chose method by only one flag
 ##################################################################
-	if not Method in ["old","pinv","diag"]:
+	if not Method in ["old_method","full_covariance","full_diagonal","anchor_t"]:
 		print "Method not defined"
 		raise ValueError
-	if Method == "old":
+	if Method == "old_method":
 		method = "diag"
 		FULL_COMA = False
-	elif Method == "diag":
+	elif Method == "full_diagonal":
 		method = "diag"
 		FULL_COMA = True
-	elif Method == "pinv":
+	elif Method == "full_covariance":
 		method = "pinv"
 		FULL_COMA = True
+	elif Method == "anchor_t":
+		method = "anch"
 ##################################################################
 	for source_dir in source_dirs:
-		write_files_tbin(
-					str(i),
-					target_dir, 
-					source_dir, 
-					waveset, 
-					upper_lims,
-					lower_lims, 
-					method = method, 
-					name_base_data = name_base_data, 
-					name_base_coma = name_base_coma,
-					FULL_COMA = FULL_COMA)
+		if method == 'anch':
+			write_anchor(		target_dir,
+						source_dir, 		# directory of the fit
+						str(i),
+						waveset,			# wave names to be used
+						upper_lims,			# mass limits for the waves
+						lower_lims,
+						name_base_data,
+						name_base_coma)
+		else:
+			write_files_tbin(
+						str(i),
+						target_dir, 
+						source_dir, 
+						waveset, 
+						upper_lims,
+						lower_lims, 
+						method = method, 
+						name_base_data = name_base_data, 
+						name_base_coma = name_base_coma,
+						FULL_COMA = FULL_COMA)
 		i+=1
 
 def write_files_tbin(
@@ -282,9 +350,9 @@ if __name__ == "__main__":
 			waves,
 			uppers,
 			lowers,
-			"old",
-			"data_3pp_1_",
-			"coma_3pp_1_")
+			"anchor_t",
+			"data_anc_1_",
+			"coma_anc_1_")
 	
 
 
