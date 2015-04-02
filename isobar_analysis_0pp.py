@@ -197,8 +197,8 @@ def isobar_analysis_0pp():
 						while re[-1] ==0. and im[-1]==0.: # Kill the last (zero) point
 							re = re[:-1]
 							im = im[:-1]
-							ree=[:-1]
-							ime=[:-1]
+							ree=ree[:-1]
+							ime=ime[:-1]
 						re= numpy.asarray(re,dtype=numpy.float64)
 						im= numpy.asarray(im,dtype=numpy.float64)
 						ree= numpy.asarray(ree,dtype=numpy.float64)

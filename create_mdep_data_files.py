@@ -127,12 +127,27 @@ def write_files(
 			waveset, 
 			upper_lims, 
 			lower_lims, 
-			method = 'pinv',
+			Method = 'pinv',
 			name_base_data = 'data_', 
-			name_base_coma = 'coma_',
-			FULL_COMA = True):
+			name_base_coma = 'coma_'):
 	"""Writes data and coma files for fit results in the source_dirs (one for each t' bin) for waveset to  target_dir"""
 	i=0
+##################################################################
+# Chose method by only one flag
+##################################################################
+	if not method in ["old","pinv","diag"]:
+		print "Method not defined"
+		raise ValueError
+	if Method == "old":
+		method = "diag"
+		FULL_COMA = False
+	elif Method == "diag"
+		method = "diag"
+		FULL_COMA = True
+	elif Method == "pinv":
+		method = "pinv"
+		FULL_COMA = True
+##################################################################
 	for source_dir in source_dirs:
 		write_files_tbin(
 					str(i),
@@ -233,12 +248,12 @@ if __name__ == "__main__":
 
 
 
-	waves = [	"1-(1++)0+ rho pi S",
+#	waves = [	"1-(1++)0+ rho pi S",
 #			"1-(1-+)1+ rho pi P",
 #			"1-(1++)0+ rho pi D",
 #			"1-(0-+)0+ f0(980) pi S",
 #			"1-(2++)1+ f2 pi P",
-			"1-(2++)1+ rho pi D"]#,
+#			"1-(2++)1+ rho pi D"]#,
 #			"1-(2++)2+ rho pi D",
 #			"1-(2-+)0+ f2 pi D",
 #			"1-(2-+)0+ f2 pi S",
@@ -247,22 +262,29 @@ if __name__ == "__main__":
 #			"1-(4++)1+ f2 pi F",
 #			"1-(4++)1+ rho pi G"]
 
+	waves = [	"1-(3++)1+ rho pi G",
+			"1-(3++)0+ rho3 pi S",
+			"1-(4++)1+ f2 pi F"]
 
-	uppers_13 = [2.3,2.0,2.1,2.3,2.0,2.0,2.0,2.3,2.3,2.1,2.3,2.3,2.3 ]
-	lowers_13 = [0.9,0.9,0.9,1.2,1.0,0.9,1.0,1.6,1.4,1.2,1.4,1.4,1.25]
 
-	uppers = [uppers_13[0],uppers_13[5]]
-	lowers = [lowers_13[0],lowers_13[5]]
 
-	write_files(	"/nfs/mds/user/fkrinner/data_mdep_fit/deck_1pp",
+#	uppers_13 = [2.3,2.0,2.1,2.3,2.0,2.0,2.0,2.3,2.3,2.1,2.3,2.3,2.3 ]
+#	lowers_13 = [0.9,0.9,0.9,1.2,1.0,0.9,1.0,1.6,1.4,1.2,1.4,1.4,1.25]
+
+#	uppers = [uppers_13[0],uppers_13[5]]
+#	lowers = [lowers_13[0],lowers_13[5]]
+
+	uppers=[2.4,2.4,2.3]
+	lowers=[1.0,1.5,1.25]
+
+	write_files(	"/nfs/mds/user/fkrinner/data_mdep_fit/3pp_fits",
 			sources,
 			waves,
 			uppers,
 			lowers,
-			"diag",
-			"data_nodeck",
-			"coma_nodeck",
-			FULL_COMA =False)
+			"old",
+			"data_3pp_1_",
+			"coma_3pp_1_")
 	
 
 
