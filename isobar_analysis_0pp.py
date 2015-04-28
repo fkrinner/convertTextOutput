@@ -11,12 +11,26 @@ from ROOT import TH1D
 from ROOT import TH2D
 from ROOT import TGraphErrors
 from ROOT import TMultiGraph
+from math import pi
 
 canv = Canvas(name = "canv0", title = "PWA")
 
+def adjust_phase_range(hist_phase):
+	for i in range(1,hist_phase.GetNbinsX()+1):
+		value = hist_phase.GetBinContent(i)
+		while value<0:
+			value+=2*pi
+		while value > 2*pi:
+			value-=2*pi
+		hist_phase.SetBinContent(i,value)
+			
+
+
+
 def isobarred_analysis_0pp():
 	jpcs = ['0-+','1++','2-+']
-	tbins=['0.10000-0.14077','0.14077-0.19435','0.19435-0.32617','0.32617-1.00000']
+#	tbins=['0.10000-0.14077','0.14077-0.19435','0.19435-0.32617','0.32617-1.00000']
+	tbins=['0.14077-0.19435']
 	root_name='isobarred_fit.root'
 	outROOT=root_open('./ROOT/'+root_name,mode="RECREATE")
 	totallists={
@@ -26,7 +40,7 @@ def isobarred_analysis_0pp():
 	sums = {}
 	for tbin in tbins:
 		for jpc in jpcs:
-			data = getTotal('/nfs/mds/user/fkrinner/massIndepententFits/fit/isobared/'+tbin,totallists[jpc],'/nfs/mds/user/fkrinner/massIndepententFits/integrals/pipiS/'+tbin,normalizeToDiag=True)
+			data = getTotal('/nfs/mds/user/fkrinner/massIndepententFits/fits/4tbin_deisobarred/fit/'+tbin,totallists[jpc],'/nfs/mds/user/fkrinner/massIndepententFits/fits/4tbin_deisobarred/integrals/'+tbin,normalizeToDiag=True)
 			binning = [data[0][0]]
 			for point in data:
 				binning.append(point[1])
@@ -39,7 +53,7 @@ def isobarred_analysis_0pp():
 				hist.SetBinError(i+1,data[i][3])
 			hist.Write()
 			hist.Draw()
-			canv.Print('./pdfs/isobarred_'+jpc+"_"+tbin+".pdf")
+#			canv.Print('./pdfs/isobarred_'+jpc+"_"+tbin+".pdf")
 			name = 'sum_over_tbins_'+jpc
 			print 'name:',name
 			if not sums.has_key(name):
@@ -50,7 +64,7 @@ def isobarred_analysis_0pp():
 	for key in sums.iterkeys():
 		sums[key].Write()
 		sums[key].Draw()
-		canv.Print('./pdfs/'+sums[key].GetName()+".pdf")
+#		canv.Print('./pdfs/'+sums[key].GetName()+".pdf")
 	outROOT.close()	
 
 def to_60(string):
@@ -82,15 +96,23 @@ def isobar_analysis_0pp():
 		'1++':[[1.261,1.299,'below_resonance'],[1.381,1.419,'on_resonance'],[1.501,1.539,'above_resonance']],
 		'2-+':[[1.781,1.819,'below_resonance'],[1.901,1.939,'on_resonance'],[2.021,2.059,'above_resonance']]
 	}
+	all_slices = True # Set True, if all 3pi slices shall be written out
+	if all_slices:
+		for i in range(50):
+			mmin = 0.5 +i*0.04 + 0.001
+			mmax = 0.5 + (i+1)*0.04 - 0.001
+			name = "slice_"+str(i)
+			iso_slices["0-+"].append([mmin,mmax,name])
+			iso_slices["1++"].append([mmin,mmax,name])
+			iso_slices["2-+"].append([mmin,mmax,name])
 	prefixes = {'0-+':'1-(0-+)0+ f0_','1++':'1-(1++)0+ f0_','2-+':'1-(2-+)0+ f0_'}
         suffixes = {'0-+':' pi S','1++':' pi P','2-+':' pi D'}
 	X_slices = [[0.961,0.999,'f_0(980)'],[1.401,1.559,'f_0(1500)'],[0.2781,2.279,'Incoherent_sum']]
 	suppressSigma=0
 	tbins=['0.10000-0.14077','0.14077-0.19435','0.19435-0.32617','0.32617-1.00000']
-#	tbins=['0.10000-0.14077']
 	sumintens={}
 	for tbin in tbins:
-		dataSet = get2D('/nfs/mds/user/fkrinner/massIndepententFits/fit/pipiS/'+tbin, '/nfs/mds/user/fkrinner/massIndepententFits/integrals/pipiS/'+tbin ,normalizeToIntegrals = False)
+		dataSet = get2D('/nfs/mds/user/fkrinner/massIndepententFits/fits/4tbin_deisobarred/fit/'+tbin, '/nfs/mds/user/fkrinner/massIndepententFits/fits/4tbin_deisobarred/integrals/'+tbin ,normalizeToIntegrals = False, divide_key_intens = True)
 		for jpc in jpcs:
 			addString = '_'+isobar
 			bins2Pi=[]
@@ -163,7 +185,7 @@ def isobar_analysis_0pp():
 				histIm.Write()
 				histPh.Write()
 				histIn.Draw("col")
-				canv.Print('./pdfs/'+histIn.GetName()+".pdf")
+#				canv.Print('./pdfs/'+histIn.GetName()+".pdf")
 				for slic in iso_slices[jpc]:
 					minm = slic[0]
 					maxm = slic[1]
@@ -180,8 +202,9 @@ def isobar_analysis_0pp():
 					slcRe =histRe.ProjectionY('slice_of_'+jpc+'_real_part_'+name+"_"+tbin,minb,maxb)
 					slcIm =histIm.ProjectionY('slice_of_'+jpc+'_imag_part_'+name+"_"+tbin,minb,maxb)
 					slcPha=histPh.ProjectionY('slice_of_'+jpc+'_phase_'+name+"_"+tbin    ,minb,maxb)
+					adjust_phase_range(slcPha)
 					slcInt.Draw()
-					canv.Print('./pdfs/'+slcInt.GetName()+".pdf")
+#					canv.Print('./pdfs/'+slcInt.GetName()+".pdf")
 					re = []
 					im = []
 					ree= []
@@ -207,7 +230,7 @@ def isobar_analysis_0pp():
 						argand.SetName('slice_of_'+jpc+'_argand_'+name+"_"+tbin)
 #						argand.Write()
 						argand.Draw('apl')
-						canv.Print('./pdfs/'+argand.GetName()+".pdf")
+#						canv.Print('./pdfs/'+argand.GetName()+".pdf")
 						argand_wrapper = TMultiGraph()
 						argand_wrapper.SetName(argand.GetName())
 						argand_wrapper.Add(argand)
@@ -228,7 +251,7 @@ def isobar_analysis_0pp():
 #					if name == 'f_0(1500)':
 #						print total_list
 #						raise Exception
-					total_data = getTotal('/nfs/mds/user/fkrinner/massIndepententFits/fit/pipiS/'+tbin,total_list, '/nfs/mds/user/fkrinner/massIndepententFits/integrals/pipiS/'+tbin,normalizeToDiag=True)
+					total_data = getTotal('/nfs/mds/user/fkrinner/massIndepententFits/fits/4tbin_deisobarred/fit/'+tbin,total_list, '/nfs/mds/user/fkrinner/massIndepententFits/fits/4tbin_deisobarred/integrals/'+tbin,normalizeToDiag=True)
 					total_binning = [total_data[0][0]]
 					for total_point in total_data:
 						total_binning.append(total_point[1])
@@ -264,7 +287,7 @@ def isobar_analysis_0pp():
 					slcPha.Write()
 					total_hist.Write()
 					slcInt.Draw()
-					canv.Print('./pdfs/'+slcInt.GetName()+".pdf")
+#					canv.Print('./pdfs/'+slcInt.GetName()+".pdf")
 					if not sumintens.has_key(name+"_"+jpc):
 						sumintens[name+"_"+jpc] = slcInt
 						sumintens[name+"_"+jpc].SetName('incoherent_sum_'+jpc+'_'+name)
@@ -273,7 +296,7 @@ def isobar_analysis_0pp():
 	for key in sumintens.iterkeys():
 		sumintens[key].Write()
 		sumintens[key].Draw()
-		canv.Print('./pdfs/'+sumintens[key].GetName()+".pdf")
+#		canv.Print('./pdfs/'+sumintens[key].GetName()+".pdf")
 	outROOT.close()
 	print "ran with no exceptions"
 

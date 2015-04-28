@@ -12,7 +12,7 @@ from ROOT import TH2D
 import os  
 import sys
 sys.path.append("/nfs/hicran/project/compass/analysis/fkrinner/fkrinner/trunk/massDependentFit/scripts/chi_squared_retry")
-from convert_text_output import readTextFile, getBestFits, getComaData, get_flat_name, get_values, getRelevantData
+from convert_text_output import readTextFile, getBestFits, getComaData, get_flat_name, get_values, getRelevantData, getBestLike, getLike
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import re
@@ -51,31 +51,6 @@ deisobared_f0_waves={	'0-+':[	'1-(0-+)0+ (pipi)_S pi S                          
 #####################################################################################################################################
 ##								READ FILES							   ##
 #####################################################################################################################################
-#------------------------------------------------------------------------------------------------------------------------------------
-def getLike(inFile):
-	"""Returns the log-likelihood of 'inFile'"""
-	count_calls('getLike')
-	nextIsLike=False
-	nextIsNevents=False
-	data=open(inFile,'r')
-	for line in data.readlines():
-		if nextIsLike:
-			like=float(line)
-			if nevents > 0:
-				data.close()
-				return like
-			else:
-				data.close()
-				return float('nan')
-		if nextIsNevents:
-			nevents = int(line)
-			nextIsNevents=False
-		if 'likelihood' in line:
-			nextIsLike=True
-		if 'Number of events' in line:
-			nextIsNevents=True
-	data.close()
-	return float('nan')
 #------------------------------------------------------------------------------------------------------------------------------------
 def getFitStatus(inFile): 
 	"""Retuns [mMin,mMax,nevents,likelihood,t'Min,t'Max]"""
@@ -130,22 +105,6 @@ def getEvents(inFile):
 		if 'Number of events' in line:
 			nextIsN=True
 	return 0
-#------------------------------------------------------------------------------------------------------------------------------------
-def getBestLike(direct='.'): 
-	"""Returns the file with the bes log-likelihood in the directory 'direct'"""
-	count_calls('getBestLike')
-	maxLike = float('nan')
-#	maxLike=-1.E10
-	bestFile=''
-	for fn in os.listdir(direct):
-    		if os.path.isfile(direct+os.sep+fn):
-			likeNew=getLike(direct+os.sep+fn)
-			print "  Found file with likelihood: "+str(likeNew)
-			if maxLike<likeNew or not maxLike == maxLike:
-				maxLike=likeNew
-				bestFile=fn
-	print "Best file is: '"+bestFile+"'"
-	return bestFile
 #------------------------------------------------------------------------------------------------------------------------------------
 def getTotalFitStatus(direct='./'):
 	"""Return the total fit status of 'direct'"""
@@ -854,8 +813,9 @@ def getFit2Pi(
 		acceptanceCorrected=True,
 		deisobarredWaves=['f0_','rho_','f2_'],
 		normalizeToDiag=False,				
-		normalizeToBinWidth = True,
-		keywave = keyWave		): # If not nomrlized to integrals, the points are too high. NOrmalize the by BindWidth to obtain smooth curves 
+		normalizeToBinWidth = True,# If not nomrlized to integrals, the points are too high. NOrmalize the by BindWidth to obtain smooth curves 
+		keywave = keyWave,
+		divide_key_intens = False 		): #Divide out the intensity of the keywave, but use the phase
 	"""Returns the 2-Pi coefficients from 'inFile' as: [[coefficients],{info}]"""
 	count_calls('getFit')
 	if normalizeToIntegrals: ## Points are divided by int**integralExponent --> nothing happens, if integralExponent == 0.
@@ -977,6 +937,40 @@ def getFit2Pi(
 					else:
 						raise Exception('Negative error of the phase')
 #					raw_input()
+				if divide_key_intens:
+					if keyWave == 'none':
+						raise ValueError # divide_key_itntens only with keywave
+					keyIntens = keyRe**2+keyIm**2
+					Re = (re*keyRe+im*keyIm)/keyIntens**.5
+					Im = (re*keyIm-im*keyRe)/keyIntens**.5
+					reJac = [	keyRe/keyIntens**.5,
+							keyIm/keyIntens**.5,
+							re/keyIntens**.5	-(re*keyRe+im*keyIm)/keyIntens**1.5*keyRe,
+							im/keyIntens**.5 	-(re*keyRe+im*keyIm)/keyIntens**1.5*keyIm]
+
+					imJac = [	keyIm/keyIntens**.5,
+							-keyRe/keyIntens**.5,
+							-im/keyIntens**.5	-(re*keyIm-im*keyRe)/keyIntens**1.5*keyRe,
+							re/keyIntens**.5	-(re*keyIm-im*keyRe)/keyIntens**1.5*keyIm]
+					try:
+						errRe=vectorMatrixVector(reJac,coma)**(.5)
+					except:
+						if abs(vectorMatrixVector(reJac,coma))<1.E-6:
+							print vectorMatrixVector(reJac,coma)
+							errRe = (-vectorMatrixVector(reJac,coma))**(.5)
+						else:
+							raise Exception('Negative error of the real part')
+					try:
+						errIm=vectorMatrixVector(imJac,coma)**(.5)
+					except:
+						if abs(vectorMatrixVector(imJac,coma))<1.E-6:
+							print vectorMatrixVector(imJac,coma)
+							errIm=(-vectorMatrixVector(imJac,coma))**(.5)
+						else:
+							raise Exception('Negative error of the imag part')
+	#					raw_input()
+
+
 				if not normalizeToIntegrals and normalizeToBinWidth:
 					width = m2Max - m2Min
 					intens/=width
@@ -985,6 +979,10 @@ def getFit2Pi(
 					errRe/=width**.5
 					Im/=width**.5
 					errIm/=width**.5
+#					print intens,Re**2+Im**2,'<<-->>',keywave
+
+
+
 				Data2Pi.append([m2Min,m2Max,jpc,intens,errIntens,Re,errRe,Im,errIm,phase,errPhase,M,deisobarredWave])
 	Data2Pi.sort()
 	return [Data2Pi,{'nevents':nEvents,'m3Pi':fitData[0]['m3Pi'],'tprime':fitData[0]['tprime']}]
@@ -1014,7 +1012,8 @@ def get2D(	direct,
 		normalizeToIntegrals=True,
 		acceptanceCorrected=False,
 		normalizeToDiag=False,
-		keywave = keyWave		): 
+		keywave = keyWave,
+		divide_key_intens = False		): 
 	"""Returns a 2-dimensional spectrum (m3Pi-m2Pi)"""
 	count_calls('get2D')
 	if intDir =='':
@@ -1023,7 +1022,7 @@ def get2D(	direct,
 	fileList=getBestFits(direct)
 	fitData=[]
 	for i in range(len(fileList)):
-		actData=getFit2Pi(fileList[i][0],intDir=intDir,normalizeToIntegrals=normalizeToIntegrals,acceptanceCorrected=acceptanceCorrected,normalizeToDiag=normalizeToDiag,keywave=keywave)
+		actData=getFit2Pi(fileList[i][0],intDir=intDir,normalizeToIntegrals=normalizeToIntegrals,acceptanceCorrected=acceptanceCorrected,normalizeToDiag=normalizeToDiag,keywave=keywave,divide_key_intens = divide_key_intens)
 		for i in range(len(actData[0])):
 			actData[0][i].reverse()
 			actData[0][i].append(actData[1]['m3Pi'][1])
